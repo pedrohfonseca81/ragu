@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "ragu",
+  "description": "Ragu — keep a code-backed knowledge base in sync with your repositories.",
+  "owner": {
+    "name": "Pedro Fonseca"
+  },
+  "plugins": [
+    {
+      "name": "ragu",
+      "description": "Stop hook that flags stale docs when code changes, plus /ragu-sync, /ragu-init, /ragu-adr and /ragu-audit skills.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Pedro Fonseca"
+      },
+      "source": "./plugins/ragu"
+    }
+  ]
+}

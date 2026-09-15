@@ -1,0 +1,11 @@
+{
+  "name": "ragu",
+  "description": "Keeps a Ragu knowledge base in sync with your code: a Stop hook that flags stale docs, and skills to sync, bootstrap, audit and write ADRs.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Pedro Fonseca"
+  },
+  "homepage": "https://github.com/pedrohfonseca/ragu",
+  "license": "MIT",
+  "keywords": ["knowledge-base", "documentation", "adr", "rag", "mcp"]
+}
