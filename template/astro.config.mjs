@@ -12,12 +12,19 @@ const config = JSON.parse(readFileSync(new URL('./ragu.config.json', import.meta
 const sections = config.sections ?? [];
 const docsDir = new URL(`./${config.docsDir ?? 'src/content/docs'}/`, import.meta.url).pathname;
 
+function siteUrl(url) {
+	try {
+		return new URL(url).toString();
+	} catch {
+		return 'http://localhost:4321/';
+	}
+}
+
 export default defineConfig({
-	site: config.remote?.url ?? 'http://localhost:4321/',
+	site: siteUrl(config.remote?.url),
 	markdown: {
-		processor: unified(),
 		// Relative `.md` links (Obsidian/GitHub style) become site routes; see scripts/lib/remark-md-links.mjs.
-		remarkPlugins: [[remarkMdLinks, { docsDir }]],
+		processor: unified({ remarkPlugins: [[remarkMdLinks, { docsDir }]] }),
 	},
 	vite: {
 		resolve: {
