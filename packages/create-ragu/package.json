@@ -5,7 +5,7 @@
   "type": "module",
   "license": "MIT",
   "bin": {
-    "create-ragu": "./bin/create-ragu.mjs"
+    "create-ragu": "bin/create-ragu.mjs"
   },
   "files": [
     "bin",
@@ -17,10 +17,19 @@
     "prepack": "node scripts/sync-template.mjs",
     "test": "node --test \"test/**/*.test.mjs\""
   },
-  "keywords": ["create", "scaffold", "knowledge-base", "rag", "mcp", "claude-code", "starlight", "ragu"],
+  "keywords": [
+    "create",
+    "scaffold",
+    "knowledge-base",
+    "rag",
+    "mcp",
+    "claude-code",
+    "starlight",
+    "ragu"
+  ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/useperfit/ragu.git",
+    "url": "git+https://github.com/useperfit/ragu.git",
     "directory": "packages/create-ragu"
   },
   "dependencies": {
