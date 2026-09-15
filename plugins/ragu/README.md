@@ -1,6 +1,6 @@
 # ragu — Claude Code plugin
 
-Keeps a [Ragu](https://github.com/pedrohfonseca/ragu) knowledge base in sync with the code it documents.
+Keeps a [Ragu](https://github.com/useperfit/ragu) knowledge base in sync with the code it documents.
 
 ## What it does
 
@@ -26,7 +26,7 @@ This is a nudge with a reverse map (code file → citing pages), not a formal pr
 ## Install
 
 ```bash
-claude plugin marketplace add pedrohfonseca/ragu
+claude plugin marketplace add useperfit/ragu
 claude plugin install ragu@ragu
 ```
 

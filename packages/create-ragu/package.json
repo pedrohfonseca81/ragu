@@ -20,7 +20,7 @@
   "keywords": ["create", "scaffold", "knowledge-base", "rag", "mcp", "claude-code", "starlight", "ragu"],
   "repository": {
     "type": "git",
-    "url": "https://github.com/pedrohfonseca/ragu.git",
+    "url": "https://github.com/useperfit/ragu.git",
     "directory": "packages/create-ragu"
   },
   "dependencies": {

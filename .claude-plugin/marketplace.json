@@ -3,7 +3,7 @@
   "name": "ragu",
   "description": "Ragu — keep a code-backed knowledge base in sync with your repositories.",
   "owner": {
-    "name": "Pedro Fonseca"
+    "name": "Perfit"
   },
   "plugins": [
     {
@@ -11,7 +11,7 @@
       "description": "Stop hook that flags stale docs when code changes, plus /ragu-sync, /ragu-init, /ragu-adr and /ragu-audit skills.",
       "version": "0.1.0",
       "author": {
-        "name": "Pedro Fonseca"
+        "name": "Perfit"
       },
       "source": "./plugins/ragu"
     }

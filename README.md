@@ -106,7 +106,7 @@ Pages with `status: outdated` come back with a warning so the agent doesn't trus
 ### 4. Install the Claude Code plugin
 
 ```bash
-claude plugin marketplace add pedrohfonseca/ragu
+claude plugin marketplace add useperfit/ragu
 claude plugin install ragu@ragu
 ```
 
@@ -324,7 +324,7 @@ ragu/
 │   ├── create-ragu/        the scaffolder (npx create-ragu)
 │   └── ragu-mcp/           local stdio MCP server (npx ragu-mcp)
 ├── plugins/ragu/           Claude Code plugin: Stop hook + skills + tests
-├── .claude-plugin/         marketplace manifest (claude plugin marketplace add pedrohfonseca/ragu)
+├── .claude-plugin/         marketplace manifest (claude plugin marketplace add useperfit/ragu)
 └── schema.json             JSON Schema for ragu.config.json
 ```
 

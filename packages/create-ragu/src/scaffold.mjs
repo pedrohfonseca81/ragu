@@ -82,7 +82,7 @@ export function scaffold(input) {
 	// when those are the configured systems, so real systems and the example are mutually exclusive.
 	if (answers.example && answers.systems.length) {
 		answers.example = false;
-		notes.push("Example docs skipped: they describe fictional systems `api`/`web`, and you configured your own. See the templates/ folder and https://github.com/pedrohfonseca/ragu/tree/main/template for the example.");
+		notes.push("Example docs skipped: they describe fictional systems `api`/`web`, and you configured your own. See the templates/ folder and https://github.com/useperfit/ragu/tree/main/template for the example.");
 	}
 	if (answers.example) answers.systems = EXAMPLE_SYSTEMS;
 
@@ -193,7 +193,7 @@ claude mcp add --transport http ${a.name} https://<your-worker-url>/mcp --header
 		: "";
 	return `# ${a.title}
 
-Knowledge base for ${a.systems.map((s) => `\`${s.id}\``).join(", ") || "this project"} — business rules, flows, integrations and decisions, kept in sync with the code. Built with [Ragu](https://github.com/pedrohfonseca/ragu).
+Knowledge base for ${a.systems.map((s) => `\`${s.id}\``).join(", ") || "this project"} — business rules, flows, integrations and decisions, kept in sync with the code. Built with [Ragu](https://github.com/useperfit/ragu).
 
 ## Use
 
@@ -217,7 +217,7 @@ claude mcp add ${a.name} -- npx ragu-mcp --root ${"$(pwd)"}
 Claude Code plugin that keeps the docs in sync with the code:
 
 \`\`\`bash
-claude plugin marketplace add pedrohfonseca/ragu
+claude plugin marketplace add useperfit/ragu
 claude plugin install ragu@ragu
 \`\`\`
 
