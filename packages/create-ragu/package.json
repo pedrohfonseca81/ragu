@@ -1,0 +1,32 @@
+{
+  "name": "create-ragu",
+  "version": "0.1.0",
+  "description": "Scaffold a Ragu knowledge base: markdown docs validated by schema, published with Starlight, searchable by agents over MCP, kept in sync with your code by a Claude Code plugin.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "create-ragu": "./bin/create-ragu.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "template",
+    "README.md"
+  ],
+  "scripts": {
+    "prepack": "node scripts/sync-template.mjs",
+    "test": "node --test \"test/**/*.test.mjs\""
+  },
+  "keywords": ["create", "scaffold", "knowledge-base", "rag", "mcp", "claude-code", "starlight", "ragu"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pedrohfonseca/ragu.git",
+    "directory": "packages/create-ragu"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

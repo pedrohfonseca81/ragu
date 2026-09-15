@@ -1,0 +1,17 @@
+{
+  "name": "ragu-monorepo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "template"
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present && node --test \"plugins/ragu/test/**/*.test.mjs\"",
+    "check:template": "npm run check --workspace template",
+    "build:template": "npm run build --workspace template"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

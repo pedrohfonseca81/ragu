@@ -1,0 +1,42 @@
+{
+  "name": "ragu-mcp",
+  "version": "0.1.0",
+  "description": "Local (stdio) MCP server for a Ragu knowledge base — lexical search over your markdown docs, no cloud required.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "ragu-mcp": "./bin/ragu-mcp.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.mjs\""
+  },
+  "keywords": [
+    "mcp",
+    "knowledge-base",
+    "rag",
+    "claude-code",
+    "ragu"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pedrohfonseca/ragu.git",
+    "directory": "packages/ragu-mcp"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
+    "gray-matter": "^4.0.3",
+    "minisearch": "^7.2.0",
+    "zod": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

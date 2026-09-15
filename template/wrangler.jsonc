@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Keep in sync with `name` in ragu.config.json.
+  "name": "acme-kb",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2025-03-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "vectorize": [
+    {
+      "binding": "VECTORIZE_INDEX",
+      // Keep in sync with `remote.vectorizeIndex` in ragu.config.json.
+      "index_name": "acme-kb-docs"
+    }
+  ]
+  // Only when `remote.oauth` is true (see README → Advanced → OAuth):
+  // "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "<id from `wrangler kv namespace create OAUTH_KV`>" }]
+}

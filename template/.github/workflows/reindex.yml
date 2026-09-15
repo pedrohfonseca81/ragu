@@ -1,0 +1,35 @@
+# Recomputes the Vectorize embeddings after Cloudflare deploys the new commit.
+# Requires: repository variable KB_URL and secret REINDEX_SECRET (see README → Remote MCP).
+name: Reindex Vectorize (MCP)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  reindex:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for the Cloudflare deploy to reflect this commit
+        env:
+          KB_URL: ${{ vars.KB_URL }}
+        run: |
+          for i in $(seq 1 20); do
+            SHA=$(curl -fsS "$KB_URL/admin/version" | jq -r '.sha // empty')
+            if [ "$SHA" = "$GITHUB_SHA" ]; then
+              echo "Deploy live at $SHA"
+              exit 0
+            fi
+            echo "Attempt $i: deployed sha is '$SHA', waiting for $GITHUB_SHA..."
+            sleep 15
+          done
+          echo "Timed out waiting for deploy to reflect commit $GITHUB_SHA"
+          exit 1
+
+      - name: Trigger reindex
+        env:
+          KB_URL: ${{ vars.KB_URL }}
+          REINDEX_SECRET: ${{ secrets.REINDEX_SECRET }}
+        run: |
+          curl -fsS -X POST "$KB_URL/admin/reindex" \
+            -H "Authorization: Bearer $REINDEX_SECRET"

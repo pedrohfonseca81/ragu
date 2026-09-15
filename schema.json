@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/pedrohfonseca/ragu/main/schema.json",
+  "title": "ragu.config.json",
+  "description": "Configuration for a Ragu knowledge base. This file is the single source of truth for systems, sections and remote settings; the site schema, MCP servers and the Claude Code hook all derive from it.",
+  "type": "object",
+  "required": ["name", "title", "systems"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": {
+      "type": "string",
+      "description": "Package/worker name (kebab-case).",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "title": {
+      "type": "string",
+      "description": "Human-readable site title."
+    },
+    "docsDir": {
+      "type": "string",
+      "description": "Directory holding the markdown vault, relative to the config file.",
+      "default": "src/content/docs"
+    },
+    "systems": {
+      "type": "array",
+      "description": "Code repositories this knowledge base documents. `id` is used in frontmatter `systems:` and as the prefix of `sources:` entries; `path` is relative to the config file. An empty list is valid (standalone knowledge base).",
+      "items": {
+        "type": "object",
+        "required": ["id", "path"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "path": { "type": "string" }
+        }
+      }
+    },
+    "sections": {
+      "type": "array",
+      "description": "Top-level folders under docsDir, in sidebar order.",
+      "default": [
+        { "dir": "systems", "label": "Systems" },
+        { "dir": "domain", "label": "Domain" },
+        { "dir": "flows", "label": "Flows" },
+        { "dir": "integrations", "label": "Integrations" },
+        { "dir": "decisions", "label": "Decisions" },
+        { "dir": "standards", "label": "Standards" }
+      ],
+      "items": {
+        "type": "object",
+        "required": ["dir", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "dir": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "label": { "type": "string" }
+        }
+      }
+    },
+    "statuses": {
+      "type": "array",
+      "description": "Fixed in v1. Skills depend on the meaning of each value.",
+      "const": ["verified", "inferred", "unverified", "outdated"]
+    },
+    "hook": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "codeExtensions": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^\\." },
+          "default": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".py", ".ex", ".exs", ".go", ".rs", ".rb", ".java", ".kt", ".sql"]
+        },
+        "ignore": {
+          "type": "array",
+          "description": "Path segments that never count as code changes.",
+          "items": { "type": "string" },
+          "default": ["node_modules", "dist", "_build", "deps", ".git"]
+        }
+      }
+    },
+    "remote": {
+      "type": "object",
+      "description": "Remote MCP server settings. Omit for a local-only knowledge base.",
+      "required": ["provider", "url"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "type": "string", "enum": ["cloudflare"] },
+        "url": { "type": "string", "format": "uri" },
+        "embeddingModel": { "type": "string", "default": "@cf/baai/bge-m3" },
+        "vectorizeIndex": { "type": "string" },
+        "oauth": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable the OAuth provider + Cloudflare Access flow (needed only for claude.ai web)."
+        }
+      }
+    }
+  }
+}

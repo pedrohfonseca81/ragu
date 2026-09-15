@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.astro/
+.wrangler/
+*.generated.json
+npm-debug.log*
+.env
+.env.*
+.DS_Store
+.obsidian/workspace*.json

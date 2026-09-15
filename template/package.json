@@ -1,0 +1,40 @@
+{
+  "name": "acme-kb",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "check": "node scripts/check.mjs",
+    "generate:docs-data": "node scripts/generate-docs-data.mjs",
+    "prebuild": "npm run check && npm run generate:docs-data",
+    "build": "astro build",
+    "preview": "astro preview",
+    "mcp": "ragu-mcp --root .",
+    "predeploy": "npm run check && npm run generate:docs-data",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@astrojs/markdown-remark": "^7.3.1",
+    "@astrojs/starlight": "^0.42.0",
+    "@cloudflare/workers-oauth-provider": "^0.10.3",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "agents": "^0.23.0",
+    "astro": "^7.2.10",
+    "astro-mermaid": "^2.1.0",
+    "gray-matter": "^4.0.3",
+    "ragu-mcp": "^0.1.0",
+    "sharp": "^0.35.3",
+    "starlight-links-validator": "^0.26.0",
+    "starlight-llms-txt": "^0.11.0",
+    "zod": "^4.0.0",
+    "unist-util-visit": "^5.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.0.0",
+    "wrangler": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

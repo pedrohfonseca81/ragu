@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/pedrohfonseca/ragu/main/schema.json",
+  "name": "acme-kb",
+  "title": "Acme Knowledge Base",
+  "docsDir": "src/content/docs",
+  "systems": [
+    { "id": "api", "path": "../api" },
+    { "id": "web", "path": "../web" }
+  ],
+  "sections": [
+    { "dir": "systems", "label": "Systems" },
+    { "dir": "domain", "label": "Domain" },
+    { "dir": "flows", "label": "Flows" },
+    { "dir": "integrations", "label": "Integrations" },
+    { "dir": "decisions", "label": "Decisions" },
+    { "dir": "standards", "label": "Standards" }
+  ],
+  "statuses": ["verified", "inferred", "unverified", "outdated"],
+  "hook": {
+    "codeExtensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".py", ".ex", ".exs", ".go", ".rs", ".rb", ".java", ".kt", ".sql"],
+    "ignore": ["node_modules", "dist", "_build", "deps", ".git"]
+  },
+  "remote": {
+    "provider": "cloudflare",
+    "url": "https://acme-kb.example.workers.dev",
+    "embeddingModel": "@cf/baai/bge-m3",
+    "vectorizeIndex": "acme-kb-docs",
+    "oauth": false
+  }
+}
