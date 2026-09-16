@@ -1,7 +1,7 @@
 {
   "name": "ragu-mcp",
-  "version": "0.1.0",
-  "description": "Local (stdio) MCP server for a Ragu knowledge base — lexical search over your markdown docs, no cloud required.",
+  "version": "0.2.0",
+  "description": "Local (stdio) MCP server for a Ragu knowledge base \u2014 lexical search over your markdown docs, no cloud required.",
   "type": "module",
   "license": "MIT",
   "bin": {

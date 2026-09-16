@@ -160,7 +160,7 @@ export function searchDocs(kb, index, { query, systems, domain, status, topK }) 
 export function createServerFactory(state) {
 	return () => {
 		const { kb } = state;
-		const server = new McpServer({ name: kb.name ?? "ragu", version: "0.1.0" });
+		const server = new McpServer({ name: kb.name ?? "ragu", version: "0.2.0" });
 
 		server.registerTool(
 			"search_docs",

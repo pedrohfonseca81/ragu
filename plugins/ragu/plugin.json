@@ -1,5 +1,5 @@
 {
   "name": "ragu",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Keeps a Ragu knowledge base in sync with your code: a Stop hook that flags stale docs, and skills to sync, bootstrap, audit and write ADRs."
 }
