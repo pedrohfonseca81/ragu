@@ -1,6 +1,6 @@
 # Setting up Ragu — instructions for an agent
 
-You are reading this because a person asked you to set up [Ragu](https://github.com/useperfit/ragu) for their project. Ragu is a markdown knowledge base for business rules, flows, integrations and decisions, where every page cites the code it describes (`sources: api/src/billing/refund.ts:42`), agents read it over MCP, and a Stop hook stops you from finishing a task that changed code without updating the pages that cite it.
+You are reading this because a person asked you to set up [Ragu](https://github.com/pedrohfonseca81/ragu) for their project. Ragu is a markdown knowledge base for business rules, flows, integrations and decisions, where every page cites the code it describes (`sources: api/src/billing/refund.ts:42`), agents read it over MCP, and a Stop hook stops you from finishing a task that changed code without updating the pages that cite it.
 
 Follow the steps below in order. Run the commands yourself; ask the person only what is listed under **Ask**. Report what you did at the end using the checklist in [Report](#report).
 
@@ -58,7 +58,7 @@ Commit those files in each repository. If a repository already had an `AGENTS.md
 Claude Code plugins are per user, so this is manual:
 
 ```bash
-claude plugin marketplace add useperfit/ragu
+claude plugin marketplace add pedrohfonseca81/ragu
 claude plugin install ragu@ragu
 ```
 

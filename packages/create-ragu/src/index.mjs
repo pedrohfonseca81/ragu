@@ -166,7 +166,7 @@ export async function main(argv = process.argv.slice(2)) {
 		if (!claudeAvailable) p.log.warn("`claude` not found on PATH; skipping plugin install.");
 		else {
 			p.log.step("Installing the ragu plugin");
-			const ok = run("claude", ["plugin", "marketplace", "add", "useperfit/ragu"], dest) && run("claude", ["plugin", "install", "ragu@ragu"], dest);
+			const ok = run("claude", ["plugin", "marketplace", "add", "pedrohfonseca81/ragu"], dest) && run("claude", ["plugin", "install", "ragu@ragu"], dest);
 			if (!ok) p.log.warn("Plugin install failed — see the README for the manual commands.");
 		}
 	}
@@ -198,7 +198,7 @@ export async function main(argv = process.argv.slice(2)) {
 		install ? null : "npm install",
 		"npm run dev                       # browse the site",
 		`claude mcp add ${name} -- npx ragu-mcp --root ${dest}`,
-		plugin ? null : "claude plugin marketplace add useperfit/ragu && claude plugin install ragu@ragu",
+		plugin ? null : "claude plugin marketplace add pedrohfonseca81/ragu && claude plugin install ragu@ragu",
 		result.example
 			? "replace the example docs: edit ragu.config.json → systems, delete src/content/docs/*, then /ragu-init <id>"
 			: systems.length
@@ -243,7 +243,7 @@ async function installMain(flags, ids) {
 		"Commit AGENTS.md, CLAUDE.md, .mcp.json and .agents/ in each repository so the whole team gets them.",
 		result.targets.some((t) => t.antigravity === "registered") || result.kb.antigravity === "registered" ? "Antigravity: restart agy / the IDE to load the plugin." : null,
 		result.kb.antigravity === "skipped" && flags.register !== false ? "Antigravity not detected (~/.gemini missing); run again after installing it to register the plugin." : null,
-		"Claude Code: plugin is per user — `claude plugin marketplace add useperfit/ragu && claude plugin install ragu@ragu`.",
+		"Claude Code: plugin is per user — `claude plugin marketplace add pedrohfonseca81/ragu && claude plugin install ragu@ragu`.",
 	].filter(Boolean);
 	p.note(notes.join("\n"), "Next steps");
 	p.outro("Done.");

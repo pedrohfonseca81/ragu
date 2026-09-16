@@ -1,6 +1,6 @@
 # create-ragu
 
-Scaffolds a [Ragu](https://github.com/useperfit/ragu) knowledge base: markdown pages validated by schema, a Starlight site + Obsidian vault, MCP access for agents, and an agent plugin (Claude Code, Antigravity) that keeps the docs in sync with your code. Also connects your code repositories to it.
+Scaffolds a [Ragu](https://github.com/pedrohfonseca81/ragu) knowledge base: markdown pages validated by schema, a Starlight site + Obsidian vault, MCP access for agents, and an agent plugin (Claude Code, Antigravity) that keeps the docs in sync with your code. Also connects your code repositories to it.
 
 ```bash
 npx create-ragu knowledge-base
@@ -29,4 +29,4 @@ Usage: npx create-ragu install [system-id ...] [--config <path>] [--force] [--no
 
 The example docs describe fictional systems `api` and `web`; when you pass your own `--systems`, the project starts empty (run `/ragu-init <id>` in Claude Code to bootstrap it from the code).
 
-Full tutorial: https://github.com/useperfit/ragu#readme
+Full tutorial: https://github.com/pedrohfonseca81/ragu#readme

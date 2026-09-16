@@ -1,6 +1,6 @@
 # ragu — agent plugin (Claude Code and Antigravity)
 
-Keeps a [Ragu](https://github.com/useperfit/ragu) knowledge base in sync with the code it documents. One directory, two manifests:
+Keeps a [Ragu](https://github.com/pedrohfonseca81/ragu) knowledge base in sync with the code it documents. One directory, two manifests:
 
 | agent | manifest | hook | skills |
 |---|---|---|---|
@@ -35,7 +35,7 @@ This is a nudge with a reverse map (code file → citing pages), not a formal pr
 **Claude Code** (per user, works in every directory):
 
 ```bash
-claude plugin marketplace add useperfit/ragu
+claude plugin marketplace add pedrohfonseca81/ragu
 claude plugin install ragu@ragu
 ```
 

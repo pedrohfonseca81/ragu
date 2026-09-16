@@ -1,6 +1,6 @@
 # ragu-mcp
 
-Local MCP server (stdio) for a [Ragu](https://github.com/useperfit/ragu) knowledge base. Lexical search with MiniSearch over your markdown docs — no cloud, no model download, indexes in under a second and re-indexes when files change.
+Local MCP server (stdio) for a [Ragu](https://github.com/pedrohfonseca81/ragu) knowledge base. Lexical search with MiniSearch over your markdown docs — no cloud, no model download, indexes in under a second and re-indexes when files change.
 
 ```bash
 claude mcp add knowledge-base -- npx ragu-mcp --root /path/to/knowledge-base

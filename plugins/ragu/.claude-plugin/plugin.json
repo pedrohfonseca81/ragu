@@ -3,9 +3,9 @@
   "description": "Keeps a Ragu knowledge base in sync with your code: a Stop hook that flags stale docs, and skills to sync, bootstrap, audit and write ADRs.",
   "version": "0.2.1",
   "author": {
-    "name": "Perfit"
+    "name": "Pedro Henrique Fonseca"
   },
-  "homepage": "https://github.com/useperfit/ragu",
+  "homepage": "https://github.com/pedrohfonseca81/ragu",
   "license": "MIT",
   "keywords": [
     "knowledge-base",

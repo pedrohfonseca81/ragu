@@ -8,7 +8,7 @@ updated_at: 2026-01-01
 
 This is the knowledge base for **Acme**, a fictional online bookshop used as the example project. Replace this page with a description of your own ecosystem: what the product does, which systems exist and how they talk to each other.
 
-> Everything under this folder is an example. Delete it (or run `npx create-ragu --no-example`) and start from the [templates](https://github.com/useperfit/ragu/tree/main/template/templates).
+> Everything under this folder is an example. Delete it (or run `npx create-ragu --no-example`) and start from the [templates](https://github.com/pedrohfonseca81/ragu/tree/main/template/templates).
 
 ## Systems
 

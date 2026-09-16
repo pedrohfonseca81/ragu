@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/create-ragu"><img alt="create-ragu on npm" src="https://img.shields.io/npm/v/create-ragu?label=create-ragu&color=c0392b"></a>
   <a href="https://www.npmjs.com/package/ragu-mcp"><img alt="ragu-mcp on npm" src="https://img.shields.io/npm/v/ragu-mcp?label=ragu-mcp&color=c0392b"></a>
-  <a href="https://github.com/useperfit/ragu/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/useperfit/ragu/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/pedrohfonseca81/ragu/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/pedrohfonseca81/ragu/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-cream"></a>
 </p>
 
@@ -131,7 +131,7 @@ Pages with `status: outdated` come back with a warning so the agent doesn't trus
 Claude Code plugins are per user, so this is the one step `install` cannot do for you:
 
 ```bash
-claude plugin marketplace add useperfit/ragu
+claude plugin marketplace add pedrohfonseca81/ragu
 claude plugin install ragu@ragu
 ```
 
@@ -158,7 +158,7 @@ The short version: let your agent do the setup, then work as usual and let the h
 [`AGENT-SETUP.md`](AGENT-SETUP.md) is written for the agent, not for you. Paste this into Claude Code or Antigravity from the directory that holds your repositories:
 
 ```
-Read https://raw.githubusercontent.com/useperfit/ragu/main/AGENT-SETUP.md and set up Ragu for this project.
+Read https://raw.githubusercontent.com/pedrohfonseca81/ragu/main/AGENT-SETUP.md and set up Ragu for this project.
 Systems: api (./api), web (./web). Knowledge base at ./knowledge-base.
 ```
 
@@ -168,7 +168,7 @@ It creates the knowledge base, connects each repository (`AGENTS.md` block, MCP,
 
 ```bash
 npx create-ragu knowledge-base --systems "api:../api,web:../web" --no-remote --install --connect -y   # 1. scaffold + connect repos
-claude plugin marketplace add useperfit/ragu && claude plugin install ragu@ragu             # 2. Claude Code plugin (per user)
+claude plugin marketplace add pedrohfonseca81/ragu && claude plugin install ragu@ragu             # 2. Claude Code plugin (per user)
 ```
 
 Then `/ragu-init api` in Claude Code (or "ragu-init api" in Antigravity). You get a map in `inbox/init-api.md`, confirm which pages to create, and end with `systems/api.md`, glossary rows and one `domain/*.md` per business rule — each `status: inferred` with `file:line` sources. Read them; flip `human_reviewed: true` on the ones that are right. Repeat per system.
@@ -395,7 +395,7 @@ ragu/
 │   ├── create-ragu/        the scaffolder (npx create-ragu)
 │   └── ragu-mcp/           local stdio MCP server (npx ragu-mcp)
 ├── plugins/ragu/           agent plugin (Claude Code + Antigravity): Stop hook + skills + tests
-├── .claude-plugin/         marketplace manifest (claude plugin marketplace add useperfit/ragu)
+├── .claude-plugin/         marketplace manifest (claude plugin marketplace add pedrohfonseca81/ragu)
 └── schema.json             JSON Schema for ragu.config.json
 ```
 

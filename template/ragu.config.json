@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/useperfit/ragu/main/schema.json",
+  "$schema": "https://raw.githubusercontent.com/pedrohfonseca81/ragu/main/schema.json",
   "name": "acme-kb",
   "title": "Acme Knowledge Base",
   "docsDir": "src/content/docs",
