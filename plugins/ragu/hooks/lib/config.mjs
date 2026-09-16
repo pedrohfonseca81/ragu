@@ -29,6 +29,53 @@ export function gitToplevel(dir) {
 	return resolve(res.stdout.trim());
 }
 
+/**
+ * Absolute path of the repository's common `.git` directory. Linked worktrees created with
+ * `git worktree add` share it with the main working tree, which is how we tell that two
+ * directories are checkouts of the same repository. Null outside a repository.
+ */
+export function gitCommonDir(dir) {
+	if (!existsSync(dir)) return null;
+	const res = spawnSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], {
+		cwd: dir,
+		encoding: "utf-8",
+		timeout: 10_000,
+	});
+	if (res.status !== 0) return null;
+	return resolve(dir, res.stdout.trim());
+}
+
+/** Absolute path of the main working tree of the repository containing `dir`, or null. */
+export function gitMainWorktree(dir) {
+	if (!existsSync(dir)) return null;
+	const res = spawnSync("git", ["worktree", "list", "--porcelain"], { cwd: dir, encoding: "utf-8", timeout: 10_000 });
+	if (res.status !== 0) return null;
+	const first = res.stdout.split("\n").find((l) => l.startsWith("worktree "));
+	return first ? resolve(first.slice("worktree ".length)) : null;
+}
+
+/** True when `a` and `b` are checkouts (main or linked worktree) of the same repository. */
+export function sameRepo(a, b) {
+	const ca = gitCommonDir(a);
+	return ca != null && ca === gitCommonDir(b);
+}
+
+/**
+ * The system paths that apply when working from `cwd`. When `cwd` is inside a linked git
+ * worktree of a system's repository, that system's path is redirected to the worktree so the
+ * hook inspects the checkout actually being edited instead of the main working tree.
+ */
+export function forWorkingTree(config, cwd) {
+	const top = gitToplevel(cwd);
+	if (!top) return config;
+	const systems = config.systems.map((s) => {
+		const sTop = gitToplevel(s.path);
+		if (!sTop || sTop === top || !sameRepo(top, s.path)) return s;
+		return { ...s, path: join(top, relative(sTop, s.path)) };
+	});
+	return { ...config, systems };
+}
+
 function isInside(child, parent) {
 	const rel = relative(parent, child);
 	return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
@@ -40,8 +87,9 @@ function isInside(child, parent) {
  *  2. a ragu.config.json in `cwd` or any ancestor;
  *  3. a ragu.config.json in an immediate child of `cwd` or any ancestor (the common
  *     "kb is a sibling of the code repos" layout), accepted only if `cwd` lies inside the
- *     knowledge base or inside one of its configured systems — or, for monorepos, if `cwd`
- *     is the git working tree that contains one of the systems.
+ *     knowledge base or inside one of its configured systems; if `cwd` is a linked git
+ *     worktree of one of the systems; or if `cwd` is the workspace that contains both the
+ *     knowledge base and at least one of its systems (sibling layout or monorepo root).
  */
 export function findConfigFor(cwd) {
 	const start = resolve(cwd);
@@ -64,7 +112,8 @@ export function findConfigFor(cwd) {
 			try {
 				const config = loadConfig(candidate);
 				if (isInside(start, config.root) || config.systems.some((s) => isInside(start, s.path))) return candidate;
-				if (config.systems.some((s) => isInside(s.path, start) && gitToplevel(start) === gitToplevel(s.path))) return candidate;
+				if (config.systems.some((s) => isInside(s.path, start))) return candidate;
+				if (config.systems.some((s) => sameRepo(start, s.path))) return candidate;
 			} catch {
 				/* invalid config; keep looking */
 			}
@@ -78,13 +127,25 @@ export function findConfigFor(cwd) {
 export function loadConfig(configPath) {
 	const raw = JSON.parse(readFileSync(configPath, "utf-8"));
 	const root = dirname(resolve(configPath));
+	// Relative system paths are meant from the kb's main working tree. When the config is read
+	// from a linked worktree of the kb (e.g. .claude/worktrees/<branch>/), `../api` would land
+	// inside the worktree; resolve it from the equivalent spot in the main tree instead.
+	const systemsBase = mainTreeEquivalent(root);
 	return {
 		root,
 		name: raw.name,
 		docsDir: resolve(root, raw.docsDir ?? "src/content/docs"),
-		systems: (raw.systems ?? []).map((s) => ({ id: s.id, path: resolve(root, s.path) })),
+		systems: (raw.systems ?? []).map((s) => ({ id: s.id, path: resolve(systemsBase, s.path) })),
 		hook: { ...DEFAULT_HOOK, ...(raw.hook ?? {}) },
 	};
+}
+
+function mainTreeEquivalent(dir) {
+	const top = gitToplevel(dir);
+	if (!top) return dir;
+	const main = gitMainWorktree(dir);
+	if (!main || main === top) return dir;
+	return join(main, relative(top, dir));
 }
 
 /** Resolves `<system-id>/<path>[:line]` to an absolute path, or null when the system is unknown. */

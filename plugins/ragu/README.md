@@ -11,7 +11,7 @@ Keeps a [Ragu](https://github.com/useperfit/ragu) knowledge base in sync with th
 
 **Stop hook** (`hooks/enforce.mjs`) — runs every time the agent is about to finish a turn. It detects the payload format on stdin (Claude Code: `cwd`/`session_id`; Antigravity: `workspacePaths`/`conversationId`) and answers in the matching dialect (`decision: "block"` vs `decision: "continue"`).
 
-1. Finds the knowledge base that governs the current directory (`ragu.config.json` in an ancestor, or in a sibling directory whose `systems` include the current repo, or — monorepos — in a child directory when the current repo contains one of its `systems`; `RAGU_CONFIG` overrides).
+1. Finds the knowledge base that governs the current directory (`ragu.config.json` in an ancestor; in a sibling directory whose `systems` include the current repo or a git worktree of it; or in a child directory when the current directory contains one of its `systems` — workspace parent or monorepo root; `RAGU_CONFIG` overrides). Inside a linked worktree of a system, the hook inspects that worktree instead of the main checkout.
 2. Looks for uncommitted code changes in every configured system (`git status`, filtered by `hook.codeExtensions` / `hook.ignore`).
 3. If code changed **and** docs changed → runs the knowledge base's `scripts/check.mjs` and blocks on errors.
 4. If code changed and docs did **not** → blocks **once per session** with the list of pages whose `sources:` cite the changed files, and instructions to update them or justify why nothing needs documenting.

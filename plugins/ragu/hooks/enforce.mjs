@@ -12,7 +12,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { findConfigFor, loadConfig } from "./lib/config.mjs";
+import { findConfigFor, forWorkingTree, loadConfig } from "./lib/config.mjs";
 import { codeChangesBySystem, docChanges, staleDocs } from "./lib/changes.mjs";
 
 const LOCK_TTL_MS = 24 * 60 * 60 * 1000;
@@ -107,7 +107,7 @@ export function main(input = readStdinJson()) {
 
 	let config;
 	try {
-		config = loadConfig(configPath);
+		config = forWorkingTree(loadConfig(configPath), cwd);
 	} catch (e) {
 		respond(io.allow(`ragu: could not read ${configPath}: ${e.message}`));
 	}

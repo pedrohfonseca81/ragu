@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parsePorcelain, readSources, isCodeFile, staleDocs, codeChangesBySystem, docChanges } from "../hooks/lib/changes.mjs";
-import { loadConfig, resolveSource, findConfigFile, findConfigFor, DEFAULT_HOOK } from "../hooks/lib/config.mjs";
+import { loadConfig, resolveSource, findConfigFile, findConfigFor, forWorkingTree, DEFAULT_HOOK } from "../hooks/lib/config.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const HOOK = join(here, "..", "hooks", "enforce.mjs");
@@ -277,7 +277,73 @@ test("monorepo: the repo root (workspace) is governed by the kb it contains", ()
 	}
 });
 
-test("a directory that merely contains an unrelated kb (different git repo) is not governed by it", () => {
+test("sibling layout: the workspace holding the kb and its systems is governed by that kb", () => {
 	// ws.root holds kb/ and api/ as separate repos; ws.root itself is not a git repo
-	assert.equal(findConfigFor(ws.root), null);
+	assert.equal(findConfigFor(ws.root), join(ws.kb, "ragu.config.json"));
+	writeFileSync(join(ws.api, "src", "refund.ts"), "changed\n");
+	const out = runHook({ cwd: ws.root, session_id: "sib-1" });
+	assert.equal(out.decision, "block");
+	assert.match(out.reason, /- api: src\/refund\.ts/);
+});
+
+test("a directory that contains a kb whose systems live elsewhere is not governed by it", () => {
+	const other = mkdtempSync(join(tmpdir(), "ragu-other-"));
+	try {
+		const kb = join(other, "kb");
+		mkdirSync(kb, { recursive: true });
+		// its only system is ws.api, outside `other`
+		writeFileSync(join(kb, "ragu.config.json"), JSON.stringify({ name: "kb", systems: [{ id: "api", path: ws.api }] }));
+		assert.equal(findConfigFor(other), null);
+	} finally {
+		rmSync(other, { recursive: true, force: true });
+	}
+});
+
+/** Adds a linked worktree of `repo` at <repo>/.claude/worktrees/<name> (the Claude Code layout). */
+function addWorktree(repo, name) {
+	const dir = join(repo, ".claude", "worktrees", name);
+	mkdirSync(dirname(dir), { recursive: true });
+	git(repo, "worktree", "add", "-q", "-b", name, dir);
+	return dir;
+}
+
+test("worktree: a linked worktree of a system is governed by the kb, even outside the system directory", () => {
+	const inside = addWorktree(ws.api, "feat");
+	assert.equal(findConfigFor(inside), join(ws.kb, "ragu.config.json"));
+	const outside = join(ws.root, "api-wt");
+	git(ws.api, "worktree", "add", "-q", "-b", "feat2", outside);
+	assert.equal(findConfigFor(outside), join(ws.kb, "ragu.config.json"));
+	assert.equal(findConfigFor(join(outside, "src")), join(ws.kb, "ragu.config.json"));
+});
+
+test("worktree: forWorkingTree points the system at the worktree being edited", () => {
+	const wt = addWorktree(ws.api, "feat");
+	const config = loadConfig(join(ws.kb, "ragu.config.json"));
+	assert.equal(forWorkingTree(config, join(wt, "src")).systems[0].path, wt);
+	// unrelated cwd (main tree, the kb, a foreign repo) leaves the paths alone
+	assert.equal(forWorkingTree(config, ws.api).systems[0].path, ws.api);
+	assert.equal(forWorkingTree(config, ws.kb).systems[0].path, ws.api);
+	assert.equal(forWorkingTree(config, ws.root).systems[0].path, ws.api);
+});
+
+test("worktree: the hook sees changes made in the worktree, not in the main tree", () => {
+	const wt = addWorktree(ws.api, "feat");
+	writeFileSync(join(wt, "src", "refund.ts"), "changed in worktree\n");
+	const out = runHook({ cwd: wt, session_id: "wt-1" });
+	assert.equal(out.decision, "block");
+	assert.match(out.reason, /- api: src\/refund\.ts/);
+	assert.match(out.reason, /domain\/refunds\.md \(sources: api\/src\/refund\.ts:10\)/);
+	// the main tree is clean: from there nothing is reported
+	assert.deepEqual(runHook({ cwd: ws.api, session_id: "wt-2" }), {});
+});
+
+test("worktree: a config read from a linked worktree of the kb still resolves its systems", () => {
+	const kbWt = addWorktree(ws.kb, "docs-feat");
+	const config = loadConfig(join(kbWt, "ragu.config.json"));
+	assert.equal(config.root, kbWt);
+	assert.equal(config.systems[0].path, ws.api);
+	writeFileSync(join(ws.api, "src", "refund.ts"), "changed\n");
+	const out = runHook({ cwd: kbWt, session_id: "kbwt-1" });
+	assert.equal(out.decision, "block");
+	assert.match(out.reason, /- api: src\/refund\.ts/);
 });
