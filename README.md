@@ -15,7 +15,7 @@ Ragu gives you a markdown knowledge base for business rules, flows, integrations
 
 1. **Every page cites the code it describes** (`sources: api/src/billing/refund.ts:42`), and the build fails when a citation or a link breaks.
 2. **Agents read it over MCP** — locally in one command, or remotely on Cloudflare with semantic search.
-3. **A Claude Code plugin keeps it in sync.** When code changes and the docs don't, the agent is stopped with the exact list of pages that cite the changed files, before it declares the task done.
+3. **An agent plugin keeps it in sync** (Claude Code and Antigravity). When code changes and the docs don't, the agent is stopped with the exact list of pages that cite the changed files, before it declares the task done.
 
 Humans get a [Starlight](https://starlight.astro.build) site and an Obsidian vault from the same files. Nothing is hidden behind a service: it is markdown, a JSON config, and a few hundred lines of Node.
 
@@ -27,7 +27,7 @@ Humans get a [Starlight](https://starlight.astro.build) site and an Obsidian vau
         changes           │                                     │  reads rules,
         (git status)      │                                     │  flows, ADRs
                           ▼                                     │
-   ┌──────────── Claude Code + ragu plugin ────────────┐   ┌────┴─────────────┐
+   ┌──── Claude Code / Antigravity + ragu plugin ──────┐   ┌────┴─────────────┐
    │  Stop hook: "code changed, these 3 pages cite it" │   │  any MCP client  │
    │  /ragu-sync  /ragu-init  /ragu-adr  /ragu-audit   │   │  (Claude Code,   │
    └───────────────────────┬───────────────────────────┘   │   Cursor, ...)   │
@@ -61,7 +61,7 @@ Humans get a [Starlight](https://starlight.astro.build) site and an Obsidian vau
 
 ## Quick start (5 minutes, no cloud)
 
-Requirements: Node ≥ 20, git. Claude Code for the plugin (optional but it's the point).
+Requirements: Node ≥ 20, git. Claude Code or Antigravity for the plugin (optional but it's the point).
 
 ### 1. Create the knowledge base
 
@@ -112,12 +112,16 @@ claude mcp add knowledge-base -- npx ragu-mcp --root "$(pwd)"
 
 Pages with `status: outdated` come back with a warning so the agent doesn't trust them blindly.
 
-### 4. Install the Claude Code plugin
+### 4. Install the agent plugin
+
+Claude Code (per user):
 
 ```bash
 claude plugin marketplace add useperfit/ragu
 claude plugin install ragu@ragu
 ```
+
+Antigravity (IDE or `agy` CLI): copy `plugins/ragu` to `.agents/plugins/ragu/` in each code repository (commit it — the whole team gets it) and register that directory once per machine in `~/.gemini/config/plugins.json` (`{ "entries": [{ "path": "/abs/path/to/api/.agents/plugins" }] }`; the CLI does not discover workspace plugins on its own as of 1.2.3). Same hook, same skills, activated by description instead of `/ragu-*`.
 
 ### 5. Bootstrap the docs from an existing repo
 
@@ -133,7 +137,7 @@ The skill explores the repo and writes a **map** to `inbox/init-api.md` — modu
 
 ## How the sync loop works
 
-The plugin registers a **Stop hook**: a script that runs every time Claude Code is about to finish a turn.
+The plugin registers a **Stop hook**: a script that runs every time the agent (Claude Code or Antigravity) is about to finish a turn.
 
 ```
 Claude is done
@@ -155,7 +159,7 @@ Claude is done
 
 The reverse map — *changed file → pages that cite it* — comes from the `sources:` frontmatter, which is why the skills insist on precise citations. It is a strong nudge, not a proof: after one block the agent may finish with a justification (refactors, lint, tests). The `check.mjs` gate is what keeps the base structurally valid at all times: frontmatter schema, relative links, `sources` that point at existing files, unique ADR numbers. It runs in under two seconds; the full Astro build (with the Starlight links validator and Mermaid rendering) runs in CI.
 
-How the hook finds the knowledge base from a code repo: it walks up from `cwd` looking for `ragu.config.json`, and at each level also looks one directory down — so a sibling `knowledge-base/` is found from `api/src/...`, but only if `api` is one of its configured `systems`. Set `RAGU_CONFIG=/path/to/ragu.config.json` to force it.
+How the hook finds the knowledge base from a code repo: it walks up from `cwd` looking for `ragu.config.json`, and at each level also looks one directory down — so a sibling `knowledge-base/` is found from `api/src/...`, but only if `api` is one of its configured `systems`. In a monorepo (`"path": "../apps/api"`, one git repository holding both) the repository root is governed by the knowledge base it contains. Set `RAGU_CONFIG=/path/to/ragu.config.json` to force it.
 
 ---
 
@@ -272,7 +276,7 @@ Edit `sections` in `ragu.config.json`; the sidebar follows. Skills only rely on 
 
 ### Running the hook outside Claude Code
 
-`plugins/ragu/hooks/enforce.mjs` reads a JSON payload on stdin (`{ "cwd": "...", "session_id": "..." }`) and prints a JSON decision. It's easy to wrap for other agents; contributions welcome.
+`plugins/ragu/hooks/enforce.mjs` reads a JSON payload on stdin and prints a JSON decision. It understands two dialects: Claude Code (`{ "cwd", "session_id", "stop_hook_active" }` → `{ "decision": "block", "reason" }`) and Antigravity (`{ "workspacePaths", "conversationId" }` → `{ "decision": "continue", "reason" }`). Adding another agent is one entry in `adapt()`; contributions welcome.
 
 ---
 
@@ -300,7 +304,7 @@ Edit `sections` in `ragu.config.json`; the sidebar follows. Skills only rely on 
   "statuses": ["verified", "inferred", "unverified", "outdated"],   // fixed in v1
   "hook": {
     "codeExtensions": [".ts", ".tsx", ".js", ".py", ".ex", ".go", ".rs", ".rb", ".java", ".kt", ".sql"],
-    "ignore": ["node_modules", "dist", "_build", "deps", ".git"]
+    "ignore": ["node_modules", "dist", "_build", "deps", ".git", ".agents", ".agent", ".claude", ".gemini"]
   },
   "remote": {                              // omit for local-only
     "provider": "cloudflare",
@@ -332,7 +336,7 @@ ragu/
 ├── packages/
 │   ├── create-ragu/        the scaffolder (npx create-ragu)
 │   └── ragu-mcp/           local stdio MCP server (npx ragu-mcp)
-├── plugins/ragu/           Claude Code plugin: Stop hook + skills + tests
+├── plugins/ragu/           agent plugin (Claude Code + Antigravity): Stop hook + skills + tests
 ├── .claude-plugin/         marketplace manifest (claude plugin marketplace add useperfit/ragu)
 └── schema.json             JSON Schema for ragu.config.json
 ```
@@ -350,7 +354,7 @@ claude plugin marketplace add "$(pwd)" && claude plugin install ragu@ragu
 
 ## Roadmap
 
-- Hook adapters for other agents (payload formats differ; the logic is shared)
+- Hook adapters for more agents (Cursor, Codex…): one entry in `adapt()`
 - Local semantic search (transformers.js) as an opt-in for `ragu-mcp`
 - Vector store providers beyond Cloudflare (pgvector, Turso)
 - A `ragu-check` GitHub Action that fails a PR when code changes without doc changes

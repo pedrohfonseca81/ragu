@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Ragu Stop hook for Claude Code.
+// Ragu Stop hook. Works as a Claude Code Stop hook and as an Antigravity (IDE / CLI) Stop hook;
+// the payload format is detected from stdin and the decision is translated back.
 //
 // When the session ends with uncommitted code changes in any configured system:
 //   - docs also changed  → run the knowledge base's fast check; block on errors.
@@ -24,6 +25,34 @@ function readStdinJson() {
 	}
 }
 
+/**
+ * Normalises the two supported payloads.
+ *  - Claude Code:  { cwd, session_id, stop_hook_active }  → { decision: "block", reason } | { systemMessage }
+ *  - Antigravity:  { workspacePaths, conversationId, executionNum } → { decision: "continue", reason }
+ */
+export function adapt(input) {
+	if (Array.isArray(input.workspacePaths) || input.conversationId) {
+		return {
+			agent: "antigravity",
+			cwd: input.workspacePaths?.[0] || process.cwd(),
+			sessionId: input.conversationId || "default",
+			// Antigravity has no "already continued" flag; guarded per session with a lock file (see main).
+			alreadyContinued: false,
+			block: (reason) => ({ decision: "continue", reason }),
+			allow: (message) => (message ? { decision: "allow", reason: message } : {}),
+		};
+	}
+	return {
+		agent: "claude",
+		cwd: input.cwd || process.cwd(),
+		sessionId: input.session_id || "default",
+		// Claude Code sets this when it is already continuing because of a Stop hook. Never block twice in a row.
+		alreadyContinued: Boolean(input.stop_hook_active),
+		block: (reason) => ({ decision: "block", reason }),
+		allow: (message) => (message ? { systemMessage: message } : {}),
+	};
+}
+
 function respond(payload) {
 	process.stdout.write(JSON.stringify(payload));
 	process.exit(0);
@@ -40,21 +69,21 @@ function listDocs(dir) {
 	return files;
 }
 
-function lockPath(sessionId) {
+function lockPath(sessionId, kind) {
 	const dir = join(tmpdir(), "ragu-hook");
 	mkdirSync(dir, { recursive: true });
-	return join(dir, `${String(sessionId).replace(/[^a-zA-Z0-9_-]/g, "_")}.lock`);
+	return join(dir, `${String(sessionId).replace(/[^a-zA-Z0-9_-]/g, "_")}.${kind}`);
 }
 
-function alreadyWarned(sessionId) {
-	const p = lockPath(sessionId);
+function alreadyWarned(sessionId, kind = "lock") {
+	const p = lockPath(sessionId, kind);
 	if (!existsSync(p)) return false;
 	return Date.now() - statSync(p).mtimeMs < LOCK_TTL_MS;
 }
 
-function markWarned(sessionId) {
+function markWarned(sessionId, kind = "lock") {
 	try {
-		writeFileSync(lockPath(sessionId), String(Date.now()));
+		writeFileSync(lockPath(sessionId, kind), String(Date.now()));
 	} catch {
 		/* best effort */
 	}
@@ -69,10 +98,10 @@ function runCheck(config) {
 }
 
 export function main(input = readStdinJson()) {
-	// Claude Code sets this when it is already continuing because of a Stop hook. Never block twice in a row.
-	if (input.stop_hook_active) respond({});
+	const io = adapt(input);
+	if (io.alreadyContinued) respond({});
 
-	const cwd = input.cwd || process.cwd();
+	const cwd = io.cwd;
 	const configPath = findConfigFor(cwd);
 	if (!configPath) respond({});
 
@@ -80,27 +109,32 @@ export function main(input = readStdinJson()) {
 	try {
 		config = loadConfig(configPath);
 	} catch (e) {
-		respond({ systemMessage: `ragu: could not read ${configPath}: ${e.message}` });
+		respond(io.allow(`ragu: could not read ${configPath}: ${e.message}`));
 	}
 
 	const changes = codeChangesBySystem(config);
 	if (!changes.length) respond({});
 
+	const sessionId = io.sessionId;
 	const docsChanged = docChanges(config);
 	if (docsChanged.length) {
 		const { ok, output } = runCheck(config);
-		if (ok) respond({ systemMessage: `ragu: knowledge base updated and validated (${docsChanged.length} file(s)).` });
-		respond({
-			decision: "block",
-			reason:
+		if (ok) respond(io.allow(`ragu: knowledge base updated and validated (${docsChanged.length} file(s)).`));
+		// Without an "already continued" flag (Antigravity), block on a failing check at most once per session.
+		if (io.agent !== "claude" && alreadyWarned(sessionId, "check")) {
+			respond(io.allow(`ragu: scripts/check.mjs still fails:\n${output}`));
+		}
+		markWarned(sessionId, "check");
+		respond(
+			io.block(
 				`[ragu] The knowledge base was updated but \`scripts/check.mjs\` failed:\n\n${output}\n\n` +
-				`Fix the errors in ${relative(cwd, config.root) || "."} before finishing.`,
-		});
+					`Fix the errors in ${relative(cwd, config.root) || "."} before finishing.`,
+			),
+		);
 	}
 
-	const sessionId = input.session_id || "default";
 	if (alreadyWarned(sessionId)) {
-		respond({ systemMessage: "ragu: knowledge base reminder already issued in this session." });
+		respond(io.allow("ragu: knowledge base reminder already issued in this session."));
 	}
 	markWarned(sessionId);
 
@@ -113,19 +147,19 @@ export function main(input = readStdinJson()) {
 		: "- none: no document cites the changed files. If this change adds or alters a business rule, contract, integration or flow, a new page is probably needed.";
 	const docsRel = relative(cwd, config.docsDir) || config.docsDir;
 
-	respond({
-		decision: "block",
-		reason:
+	respond(
+		io.block(
 			"[ragu] Code changed but the knowledge base did not.\n\n" +
-			`Changed code:\n${changedSummary}\n\n` +
-			`Documents whose \`sources:\` point at these files (potentially stale):\n${staleSummary}\n\n` +
-			"Before finishing:\n" +
-			"1. Read the guidelines in the knowledge base's AGENTS.md.\n" +
-			"2. Decide whether this change creates, alters or removes a business rule, API contract, integration or flow.\n" +
-			`3. If yes: update or create the pages under ${docsRel}/ (frontmatter: title, domain, systems, status, sources, updated_at), keep \`sources:\` pointing at the exact files/lines, and run \`npm run check\` in the knowledge base.\n` +
-			"4. Record open questions or divergences in inbox/QUESTIONS.md or inbox/DIVERGENCES.md.\n" +
-			"5. If the change is strictly technical (refactor, lint, tests, dependencies) with no impact on documented behaviour, you may finish — say so explicitly in your final answer.",
-	});
+				`Changed code:\n${changedSummary}\n\n` +
+				`Documents whose \`sources:\` point at these files (potentially stale):\n${staleSummary}\n\n` +
+				"Before finishing:\n" +
+				"1. Read the guidelines in the knowledge base's AGENTS.md.\n" +
+				"2. Decide whether this change creates, alters or removes a business rule, API contract, integration or flow.\n" +
+				`3. If yes: update or create the pages under ${docsRel}/ (frontmatter: title, domain, systems, status, sources, updated_at), keep \`sources:\` pointing at the exact files/lines, and run \`npm run check\` in the knowledge base.\n` +
+				"4. Record open questions or divergences in inbox/QUESTIONS.md or inbox/DIVERGENCES.md.\n" +
+				"5. If the change is strictly technical (refactor, lint, tests, dependencies) with no impact on documented behaviour, you may finish — say so explicitly in your final answer.",
+		),
+	);
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) main();

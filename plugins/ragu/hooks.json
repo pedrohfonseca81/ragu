@@ -1,0 +1,11 @@
+{
+  "ragu": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node hooks/enforce.mjs",
+        "timeout": 60
+      }
+    ]
+  }
+}

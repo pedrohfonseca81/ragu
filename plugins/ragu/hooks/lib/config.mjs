@@ -2,10 +2,11 @@
 // (kept separate so the plugin has no dependency on the knowledge base's own scripts).
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
 
 export const DEFAULT_HOOK = {
 	codeExtensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".py", ".ex", ".exs", ".go", ".rs", ".rb", ".java", ".kt", ".sql"],
-	ignore: ["node_modules", "dist", "_build", "deps", ".git"],
+	ignore: ["node_modules", "dist", "_build", "deps", ".git", ".agents", ".agent", ".claude", ".gemini"],
 };
 
 /** Walks up from `start` until a ragu.config.json is found. */
@@ -20,6 +21,14 @@ export function findConfigFile(start) {
 	}
 }
 
+/** Absolute path of the git working tree that contains `dir`, or null. */
+export function gitToplevel(dir) {
+	if (!existsSync(dir)) return null;
+	const res = spawnSync("git", ["rev-parse", "--show-toplevel"], { cwd: dir, encoding: "utf-8", timeout: 10_000 });
+	if (res.status !== 0) return null;
+	return resolve(res.stdout.trim());
+}
+
 function isInside(child, parent) {
 	const rel = relative(parent, child);
 	return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
@@ -31,7 +40,8 @@ function isInside(child, parent) {
  *  2. a ragu.config.json in `cwd` or any ancestor;
  *  3. a ragu.config.json in an immediate child of `cwd` or any ancestor (the common
  *     "kb is a sibling of the code repos" layout), accepted only if `cwd` lies inside the
- *     knowledge base or inside one of its configured systems.
+ *     knowledge base or inside one of its configured systems — or, for monorepos, if `cwd`
+ *     is the git working tree that contains one of the systems.
  */
 export function findConfigFor(cwd) {
 	const start = resolve(cwd);
@@ -54,6 +64,7 @@ export function findConfigFor(cwd) {
 			try {
 				const config = loadConfig(candidate);
 				if (isInside(start, config.root) || config.systems.some((s) => isInside(start, s.path))) return candidate;
+				if (config.systems.some((s) => isInside(s.path, start) && gitToplevel(start) === gitToplevel(s.path))) return candidate;
 			} catch {
 				/* invalid config; keep looking */
 			}

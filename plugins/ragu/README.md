@@ -1,16 +1,23 @@
-# ragu — Claude Code plugin
+# ragu — agent plugin (Claude Code and Antigravity)
 
-Keeps a [Ragu](https://github.com/useperfit/ragu) knowledge base in sync with the code it documents.
+Keeps a [Ragu](https://github.com/useperfit/ragu) knowledge base in sync with the code it documents. One directory, two manifests:
+
+| agent | manifest | hook | skills |
+|---|---|---|---|
+| Claude Code | `.claude-plugin/plugin.json` | `hooks/hooks.json` → `Stop` | `skills/*/SKILL.md`, invoked as `/ragu-*` |
+| Antigravity (IDE, CLI `agy`) | `plugin.json` | `hooks.json` → `Stop` | same files, activated by description |
 
 ## What it does
 
-**Stop hook** (`hooks/enforce.mjs`) — runs every time Claude Code is about to finish a turn:
+**Stop hook** (`hooks/enforce.mjs`) — runs every time the agent is about to finish a turn. It detects the payload format on stdin (Claude Code: `cwd`/`session_id`; Antigravity: `workspacePaths`/`conversationId`) and answers in the matching dialect (`decision: "block"` vs `decision: "continue"`).
 
-1. Finds the knowledge base that governs the current directory (`ragu.config.json` in an ancestor, or in a sibling directory whose `systems` include the current repo; `RAGU_CONFIG` overrides).
+1. Finds the knowledge base that governs the current directory (`ragu.config.json` in an ancestor, or in a sibling directory whose `systems` include the current repo, or — monorepos — in a child directory when the current repo contains one of its `systems`; `RAGU_CONFIG` overrides).
 2. Looks for uncommitted code changes in every configured system (`git status`, filtered by `hook.codeExtensions` / `hook.ignore`).
 3. If code changed **and** docs changed → runs the knowledge base's `scripts/check.mjs` and blocks on errors.
 4. If code changed and docs did **not** → blocks **once per session** with the list of pages whose `sources:` cite the changed files, and instructions to update them or justify why nothing needs documenting.
 5. Outside a Ragu workspace it does nothing.
+
+Systems may be subdirectories of a larger git repository (`"path": "../apps/api"`): changes are listed with `git status -- .` inside the system and reported relative to it.
 
 This is a nudge with a reverse map (code file → citing pages), not a formal proof of sync. The agent can still finish after explaining why a change is purely technical.
 
@@ -25,12 +32,23 @@ This is a nudge with a reverse map (code file → citing pages), not a formal pr
 
 ## Install
 
+**Claude Code** (per user, works in every directory):
+
 ```bash
 claude plugin marketplace add useperfit/ragu
 claude plugin install ragu@ragu
 ```
 
-Local development:
+**Antigravity** (IDE or `agy` CLI): copy this directory to `.agents/plugins/ragu/` in the repository (commit it so the whole team gets it), then register it once per machine — the CLI (1.2.3) does not discover workspace plugins by itself:
+
+```json
+// ~/.gemini/config/plugins.json
+{ "entries": [{ "path": "/abs/path/to/api/.agents/plugins" }] }
+```
+
+A global copy under `~/.gemini/config/plugins/ragu/` also works. The hook command is relative to `hooks.json`, as Antigravity runs it from that directory. `agy plugin validate .agents/plugins/ragu` checks the layout.
+
+Local development (Claude Code):
 
 ```bash
 claude plugin marketplace add /path/to/ragu
@@ -40,6 +58,8 @@ claude plugin install ragu@ragu
 ## Requirements
 
 Node ≥ 20 on `PATH` (the hook runs with `node`). No other dependencies.
+
+Antigravity has no "already continuing" flag, so the hook keeps a small lock file per conversation under the OS temp dir and never re-blocks the same conversation for the same reason.
 
 ## Test
 

@@ -3,18 +3,23 @@
 import { existsSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { extname, join, relative } from "node:path";
-import { resolveSource } from "./config.mjs";
+import { gitToplevel, resolveSource } from "./config.mjs";
 
-/** Uncommitted (modified, added, untracked, renamed) paths relative to `repoDir`. */
+/**
+ * Uncommitted (modified, added, untracked, renamed) paths under `repoDir`, relative to it.
+ * `repoDir` may be a subdirectory of the repository (monorepo layouts).
+ */
 export function gitChangedFiles(repoDir) {
-	if (!existsSync(join(repoDir, ".git"))) return [];
-	const res = spawnSync("git", ["status", "--porcelain", "--untracked-files=all"], {
+	const top = gitToplevel(repoDir);
+	if (!top) return [];
+	const res = spawnSync("git", ["status", "--porcelain", "--untracked-files=all", "--", "."], {
 		cwd: repoDir,
 		encoding: "utf-8",
 		timeout: 10_000,
 	});
 	if (res.status !== 0) return [];
-	return parsePorcelain(res.stdout);
+	// porcelain paths are relative to the repository root, not to cwd
+	return parsePorcelain(res.stdout).map((p) => relative(repoDir, join(top, p)).replace(/\\/g, "/"));
 }
 
 export function parsePorcelain(stdout) {

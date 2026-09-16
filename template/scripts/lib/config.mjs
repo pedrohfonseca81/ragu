@@ -15,7 +15,7 @@ export const DEFAULT_SECTIONS = [
 
 export const DEFAULT_HOOK = {
 	codeExtensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".py", ".ex", ".exs", ".go", ".rs", ".rb", ".java", ".kt", ".sql"],
-	ignore: ["node_modules", "dist", "_build", "deps", ".git"],
+	ignore: ["node_modules", "dist", "_build", "deps", ".git", ".agents", ".agent", ".claude", ".gemini"],
 };
 
 /** Walks up from `start` until it finds a ragu.config.json. Returns the config file path or null. */

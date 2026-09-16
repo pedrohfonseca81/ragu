@@ -174,3 +174,110 @@ test("hook: code and docs changed → blocks when check fails", () => {
 	assert.equal(out.decision, "block");
 	assert.match(out.reason, /check\.mjs` failed/);
 });
+
+// ---- Antigravity payload ------------------------------------------------------------------
+
+function agyInput(cwd, conversationId = `c-${Date.now()}-${Math.random()}`, extra = {}) {
+	return { conversationId, workspacePaths: [cwd], executionNum: 1, terminationReason: "model_stop", fullyIdle: true, ...extra };
+}
+
+test("adapt: detects Claude and Antigravity payloads", async () => {
+	const { adapt } = await import("../hooks/enforce.mjs");
+	const c = adapt({ cwd: "/x", session_id: "s", stop_hook_active: true });
+	assert.equal(c.agent, "claude");
+	assert.equal(c.alreadyContinued, true);
+	assert.deepEqual(c.block("r"), { decision: "block", reason: "r" });
+	assert.deepEqual(c.allow("m"), { systemMessage: "m" });
+	const a = adapt({ conversationId: "c", workspacePaths: ["/y"] });
+	assert.equal(a.agent, "antigravity");
+	assert.equal(a.cwd, "/y");
+	assert.equal(a.sessionId, "c");
+	assert.deepEqual(a.block("r"), { decision: "continue", reason: "r" });
+	assert.deepEqual(a.allow("m"), { decision: "allow", reason: "m" });
+	assert.deepEqual(a.allow(), {});
+});
+
+test("hook (antigravity): code changed, docs not → continue once, then allow", () => {
+	writeFileSync(join(ws.api, "src", "refund.ts"), "changed\n");
+	const id = `c-${Date.now()}`;
+	const first = runHook(agyInput(ws.api, id));
+	assert.equal(first.decision, "continue");
+	assert.match(first.reason, /domain\/refunds\.md/);
+	const second = runHook(agyInput(ws.api, id));
+	assert.equal(second.decision, "allow");
+	assert.match(second.reason, /already issued/);
+});
+
+test("hook (antigravity): failing check → continue once per conversation, then allow", () => {
+	writeFileSync(join(ws.api, "src", "refund.ts"), "changed\n");
+	writeFileSync(join(ws.kb, "inbox", "QUESTIONS.md"), "# q\n");
+	const id = `c-${Date.now()}`;
+	const first = runHook(agyInput(ws.api, id), { RAGU_TEST_CHECK_FAIL: "1" });
+	assert.equal(first.decision, "continue");
+	assert.match(first.reason, /check\.mjs` failed/);
+	const second = runHook(agyInput(ws.api, id), { RAGU_TEST_CHECK_FAIL: "1" });
+	assert.equal(second.decision, "allow");
+	assert.match(second.reason, /still fails/);
+});
+
+test("hook (antigravity): no changes → {}", () => {
+	assert.deepEqual(runHook(agyInput(ws.api)), {});
+});
+
+// ---- monorepo: one git repo containing the kb and the systems ------------------------------
+
+function makeMonorepo() {
+	const root = mkdtempSync(join(tmpdir(), "ragu-mono-"));
+	initRepo(root);
+	const kb = join(root, "kb");
+	const api = join(root, "apps", "api");
+	mkdirSync(join(kb, "src", "content", "docs", "domain"), { recursive: true });
+	mkdirSync(join(kb, "inbox"), { recursive: true });
+	mkdirSync(join(kb, "scripts"), { recursive: true });
+	writeFileSync(join(kb, "ragu.config.json"), JSON.stringify({ name: "kb", title: "KB", systems: [{ id: "api", path: "../apps/api" }] }));
+	writeFileSync(
+		join(kb, "src", "content", "docs", "domain", "refunds.md"),
+		`---\ntitle: Refunds\nsystems: [api]\nstatus: verified\nsources:\n  - api/src/refund.ts:10\nupdated_at: 2026-01-01\n---\nbody\n`,
+	);
+	writeFileSync(join(kb, "scripts", "check.mjs"), `process.exit(0);\n`);
+	mkdirSync(join(api, "src"), { recursive: true });
+	writeFileSync(join(api, "src", "refund.ts"), "export const a = 1;\n");
+	writeFileSync(join(root, "README.md"), "# mono\n");
+	commitAll(root);
+	return { root, kb, api };
+}
+
+test("monorepo: changes in a system subdirectory are detected relative to the system", () => {
+	const m = makeMonorepo();
+	try {
+		const config = loadConfig(join(m.kb, "ragu.config.json"));
+		writeFileSync(join(m.api, "src", "refund.ts"), "changed\n");
+		writeFileSync(join(m.root, "README.md"), "changed outside any system\n");
+		assert.deepEqual(codeChangesBySystem(config).map((c) => ({ id: c.systemId, files: c.files })), [{ id: "api", files: ["src/refund.ts"] }]);
+		assert.deepEqual(docChanges(config), []);
+		writeFileSync(join(m.kb, "inbox", "QUESTIONS.md"), "# q\n");
+		assert.deepEqual(docChanges(config), ["inbox/QUESTIONS.md"]);
+	} finally {
+		rmSync(m.root, { recursive: true, force: true });
+	}
+});
+
+test("monorepo: the repo root (workspace) is governed by the kb it contains", () => {
+	const m = makeMonorepo();
+	try {
+		assert.equal(findConfigFor(m.root), join(m.kb, "ragu.config.json"));
+		assert.equal(findConfigFor(join(m.api, "src")), join(m.kb, "ragu.config.json"));
+		writeFileSync(join(m.api, "src", "refund.ts"), "changed\n");
+		const out = runHook(agyInput(m.root));
+		assert.equal(out.decision, "continue");
+		assert.match(out.reason, /- api: src\/refund\.ts/);
+		assert.match(out.reason, /domain\/refunds\.md \(sources: api\/src\/refund\.ts:10\)/);
+	} finally {
+		rmSync(m.root, { recursive: true, force: true });
+	}
+});
+
+test("a directory that merely contains an unrelated kb (different git repo) is not governed by it", () => {
+	// ws.root holds kb/ and api/ as separate repos; ws.root itself is not a git repo
+	assert.equal(findConfigFor(ws.root), null);
+});

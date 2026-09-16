@@ -74,7 +74,7 @@
           "type": "array",
           "description": "Path segments that never count as code changes.",
           "items": { "type": "string" },
-          "default": ["node_modules", "dist", "_build", "deps", ".git"]
+          "default": ["node_modules", "dist", "_build", "deps", ".git", ".agents", ".agent", ".claude", ".gemini"]
         }
       }
     },
