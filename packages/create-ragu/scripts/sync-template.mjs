@@ -1,5 +1,5 @@
-// Copies ../../template into ./template before `npm pack`/`npm publish`, so the published
-// package is self-contained. `.gitignore` becomes `_gitignore` (npm strips dotfiles named .gitignore).
+// Copies ../../template into ./template and ../../plugins/ragu into ./plugin before
+// `npm pack`/`npm publish`, so the published package is self-contained. `.gitignore` becomes `_gitignore` (npm strips dotfiles named .gitignore).
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,3 +27,11 @@ if (!existsSync(src)) {
 rmSync(dest, { recursive: true, force: true });
 copy(src, dest);
 console.log(`synced template → ${dest}`);
+
+// The agent plugin is copied into every connected repository by `create-ragu install`.
+const pluginSrc = resolve(here, "..", "..", "..", "plugins", "ragu");
+const pluginDest = resolve(here, "..", "plugin");
+rmSync(pluginDest, { recursive: true, force: true });
+SKIP.add("test");
+copy(pluginSrc, pluginDest);
+console.log(`synced plugin → ${pluginDest}`);

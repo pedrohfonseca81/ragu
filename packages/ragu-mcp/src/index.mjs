@@ -1,8 +1,9 @@
 // ragu-mcp: local stdio MCP server over a Ragu knowledge base.
 // Same three tools and signatures as the remote Cloudflare worker, so agents don't
 // notice which one they're talking to. Search is lexical (MiniSearch) — no network, no model download.
-import { readFileSync, existsSync, watch } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { readFileSync, existsSync, readdirSync, watch } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import matter from "gray-matter";
 import MiniSearch from "minisearch";
 import { z } from "zod";
@@ -16,6 +17,56 @@ export function findConfigFile(start) {
 	for (;;) {
 		const candidate = join(dir, "ragu.config.json");
 		if (existsSync(candidate)) return candidate;
+		const parent = dirname(dir);
+		if (parent === dir) return null;
+		dir = parent;
+	}
+}
+
+function gitToplevel(dir) {
+	if (!existsSync(dir)) return null;
+	const res = spawnSync("git", ["rev-parse", "--show-toplevel"], { cwd: dir, encoding: "utf-8", timeout: 10_000 });
+	return res.status === 0 ? resolve(res.stdout.trim()) : null;
+}
+
+function isInside(child, parent) {
+	const rel = relative(parent, child);
+	return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
+
+/**
+ * Finds the knowledge base that governs `cwd` (same rules as the ragu plugin hook):
+ *  1. `RAGU_CONFIG` env var; 2. ragu.config.json in `cwd` or an ancestor;
+ *  3. ragu.config.json in an immediate child of `cwd` or an ancestor, when `cwd` is inside one of
+ *     its configured systems (sibling layout) or is the git repository containing one (monorepo).
+ * Lets `.mcp.json` / `mcp_config.json` in a code repository run `ragu-mcp` with no arguments.
+ */
+export function findConfigFor(cwd) {
+	const start = resolve(cwd);
+	if (process.env.RAGU_CONFIG && existsSync(process.env.RAGU_CONFIG)) return resolve(process.env.RAGU_CONFIG);
+	const direct = findConfigFile(start);
+	if (direct) return direct;
+	let dir = start;
+	for (;;) {
+		let entries = [];
+		try {
+			entries = readdirSync(dir, { withFileTypes: true });
+		} catch {
+			/* unreadable ancestor */
+		}
+		for (const entry of entries) {
+			if (!entry.isDirectory() || entry.name.startsWith(".") || entry.name === "node_modules") continue;
+			const candidate = join(dir, entry.name, "ragu.config.json");
+			if (!existsSync(candidate)) continue;
+			try {
+				const root = join(dir, entry.name);
+				const systems = (JSON.parse(readFileSync(candidate, "utf-8")).systems ?? []).map((s) => resolve(root, s.path));
+				if (systems.some((s) => isInside(start, s))) return candidate;
+				if (systems.some((s) => isInside(s, start) && gitToplevel(start) === gitToplevel(s))) return candidate;
+			} catch {
+				/* invalid config; keep looking */
+			}
+		}
 		const parent = dirname(dir);
 		if (parent === dir) return null;
 		dir = parent;

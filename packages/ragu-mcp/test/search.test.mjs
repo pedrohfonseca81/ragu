@@ -39,3 +39,21 @@ test("fuzzy matching tolerates typos", () => {
 	const results = searchDocs(kb, index, { query: "cancelation" });
 	assert.ok(results.some((r) => r.path === "domain/order-cancellation.md"));
 });
+
+test("findConfigFor finds a sibling knowledge base whose systems include cwd", async () => {
+	const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+	const { tmpdir } = await import("node:os");
+	const { findConfigFor } = await import("../src/index.mjs");
+	const root = mkdtempSync(join(tmpdir(), "ragu-mcp-"));
+	try {
+		mkdirSync(join(root, "kb"));
+		mkdirSync(join(root, "api", "src"), { recursive: true });
+		mkdirSync(join(root, "other"));
+		writeFileSync(join(root, "kb", "ragu.config.json"), JSON.stringify({ name: "kb", systems: [{ id: "api", path: "../api" }] }));
+		assert.equal(findConfigFor(join(root, "api", "src")), join(root, "kb", "ragu.config.json"));
+		assert.equal(findConfigFor(join(root, "kb", "src")), join(root, "kb", "ragu.config.json"));
+		assert.equal(findConfigFor(join(root, "other")), null);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});

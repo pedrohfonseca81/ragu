@@ -60,6 +60,10 @@ Create, in this order:
 
 Link pages to each other with relative markdown links. Add the system to `index.md` (overview + diagram) if it is not there.
 
+## Connect the repository
+
+Run `npx create-ragu install <system-id>` from the knowledge base. It writes, in the system's repository, a marked block in `AGENTS.md` pointing at the knowledge base, `@AGENTS.md` in `CLAUDE.md`, the MCP server in `.mcp.json`, and the agent plugin in `.agents/plugins/ragu/` (Antigravity). Tell the user to commit those files there. Do not hand-write the block: the command is idempotent and future runs update it in place.
+
 ## Validate and report
 
-Run `npm run check` in the knowledge base and fix all errors. Report the pages created with their status and the questions left in `inbox/QUESTIONS.md`.
+Run `npm run check` in the knowledge base and fix all errors. Report the pages created with their status, the questions left in `inbox/QUESTIONS.md`, and the files written in the system's repository.

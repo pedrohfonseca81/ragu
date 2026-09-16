@@ -3,6 +3,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { installPlugin, mergeMcpJson } from "./install.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -140,6 +141,10 @@ export function scaffold(input) {
 
 	if (!answers.example) writeEmptyDocs(dest, answers);
 
+	// The knowledge base is itself an agent workspace (ADRs, audits): ship the plugin and MCP config.
+	installPlugin(dest, answers.name);
+	mergeMcpJson(dest, answers.name);
+
 	writeFileSync(join(dest, "README.md"), projectReadme(answers));
 	return { dest, notes, example: answers.example, systems: answers.systems };
 }
@@ -214,14 +219,20 @@ Local MCP server (no cloud):
 claude mcp add ${a.name} -- npx ragu-mcp --root ${"$(pwd)"}
 \`\`\`
 
-Claude Code plugin that keeps the docs in sync with the code:
+Agent plugin that keeps the docs in sync with the code (Stop hook + skills \`ragu-init\`, \`ragu-sync\`, \`ragu-adr\`, \`ragu-audit\`):
 
 \`\`\`bash
+# Claude Code (per user)
 claude plugin marketplace add useperfit/ragu
 claude plugin install ragu@ragu
+# Antigravity: .agents/plugins/ragu/ in this repo, registered in ~/.gemini/config/plugins.json by create-ragu
 \`\`\`
 
-Skills: \`/ragu-init <system>\`, \`/ragu-sync\`, \`/ragu-adr <title>\`, \`/ragu-audit\`.
+Connect the code repositories (AGENTS.md block, \`.mcp.json\`, \`.agents/plugins/ragu\` in each) — re-run whenever a system is added or the plugin is updated:
+
+\`\`\`bash
+npx create-ragu install
+\`\`\`
 ${remote}
 ## Layout
 

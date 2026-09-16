@@ -96,13 +96,26 @@ npm run dev          # http://localhost:4321
 
 Open `src/content/docs/` in Obsidian if you prefer. Links are plain relative markdown (`../domain/refunds.md`); the site rewrites them to routes at build time, so both tools work on the same files.
 
-### 3. Give agents access (local MCP)
+### 3. Connect your repositories
 
 ```bash
-claude mcp add knowledge-base -- npx ragu-mcp --root "$(pwd)"
+npx create-ragu install          # from the knowledge base or any of its systems
 ```
 
-`ragu-mcp` is a stdio MCP server with lexical search (MiniSearch). It re-indexes when files change. Three tools:
+(The wizard offers this step at the end of `create-ragu`; this is the same thing, re-runnable.) For every configured system it finds the repository root and writes:
+
+| file | what | for |
+|---|---|---|
+| `AGENTS.md` | a block between `<!-- ragu:start -->` / `<!-- ragu:end -->`: where the knowledge base is, the MCP server name, and three rules (search before changing a rule, sync after, code is the truth). Created if missing; replaced in place on re-runs, nothing outside the markers is touched | every agent that reads `AGENTS.md` |
+| `CLAUDE.md` | `@AGENTS.md` include (created or prepended) | Claude Code |
+| `.mcp.json` | server `<kb-name>` → `npx -y ragu-mcp` (merged; other servers kept) | Claude Code |
+| `.agents/plugins/ragu/` | the agent plugin (Stop hook + skills + `mcp_config.json`), version-gated so re-runs only upgrade | Antigravity |
+
+It also registers `.agents/plugins` in `~/.gemini/config/plugins.json` on this machine (the Antigravity CLI does not discover workspace plugins by itself as of 1.2.3; teammates run `npx create-ragu install` once after cloning), and does the same for the knowledge base itself so ADRs and audits work from there. Commit the files in each repository.
+
+In a monorepo (one git repository holding `knowledge-base/` and `apps/api`, `apps/web`) the block is written once at the repository root and lists every system.
+
+**MCP.** `ragu-mcp` is a stdio MCP server with lexical search (MiniSearch), no cloud. Run with no arguments it finds the knowledge base that governs the current directory (upwards, a configured sibling, or the monorepo) — which is why the generated configs need no paths. It re-indexes when files change. Three tools:
 
 | tool | input | returns |
 |---|---|---|
@@ -110,18 +123,18 @@ claude mcp add knowledge-base -- npx ragu-mcp --root "$(pwd)"
 | `get_document` | `path` (e.g. `domain/refunds.md`) | one document |
 | `list_documents` | optional `systems[]`, `domain` | metadata only |
 
-Pages with `status: outdated` come back with a warning so the agent doesn't trust them blindly.
+Pages with `status: outdated` come back with a warning so the agent doesn't trust them blindly. To add it by hand: `claude mcp add knowledge-base -- npx ragu-mcp --root /path/to/knowledge-base`.
 
 ### 4. Install the agent plugin
 
-Claude Code (per user):
+Claude Code plugins are per user, so this is the one step `install` cannot do for you:
 
 ```bash
 claude plugin marketplace add useperfit/ragu
 claude plugin install ragu@ragu
 ```
 
-Antigravity (IDE or `agy` CLI): copy `plugins/ragu` to `.agents/plugins/ragu/` in each code repository (commit it — the whole team gets it) and register that directory once per machine in `~/.gemini/config/plugins.json` (`{ "entries": [{ "path": "/abs/path/to/api/.agents/plugins" }] }`; the CLI does not discover workspace plugins on its own as of 1.2.3). Same hook, same skills, activated by description instead of `/ragu-*`.
+Antigravity (IDE or `agy` CLI) got the plugin in step 3 (`.agents/plugins/ragu/` in each repository, registered in `~/.gemini/config/plugins.json`). Same hook, same skills, activated by description instead of `/ragu-*`; `agy plugin validate .agents/plugins/ragu` checks the layout.
 
 ### 5. Bootstrap the docs from an existing repo
 
@@ -131,7 +144,7 @@ In Claude Code, from anywhere inside the workspace:
 /ragu-init api
 ```
 
-The skill explores the repo and writes a **map** to `inbox/init-api.md` — modules, domain candidates with `file:line`, integrations, flows, open questions, proposed pages — then **stops and asks** which pages to create. Only after you confirm does it write `systems/api.md`, glossary rows and `domain/*.md` pages, all with `status: inferred` and `human_reviewed: false`. Review them; flip `human_reviewed` yourself when a page is right.
+The skill explores the repo and writes a **map** to `inbox/init-api.md` — modules, domain candidates with `file:line`, integrations, flows, open questions, proposed pages — then **stops and asks** which pages to create. Only after you confirm does it write `systems/api.md`, glossary rows and `domain/*.md` pages, all with `status: inferred` and `human_reviewed: false`, and runs `npx create-ragu install api` so the repository is connected. Review the pages; flip `human_reviewed` yourself when a page is right.
 
 ---
 
@@ -198,7 +211,7 @@ The rules agents follow are in the generated `AGENTS.md` (`CLAUDE.md` includes i
 | skill | what it does |
 |---|---|
 | `/ragu-sync` | Diffs every configured system, classifies changes as behavioural or technical, updates the pages that cite the changed files (or creates new ones from `templates/`), fixes `sources`/`status`/`updated_at`, runs `check`. |
-| `/ragu-init <system-id>` | Two-phase bootstrap of one system: map to `inbox/init-<id>.md` → confirmation → pages with `status: inferred`. Never several systems at once. |
+| `/ragu-init <system-id>` | Two-phase bootstrap of one system: map to `inbox/init-<id>.md` → confirmation → pages with `status: inferred` → `create-ragu install`. Never several systems at once. |
 | `/ragu-adr <title>` | Next `NNNN`, filled ADR template, cross-links from the affected `systems/` and `domain/` pages. |
 | `/ragu-audit [scope]` | `check --json` + git-history staleness (`sources` newer than `updated_at`) + claim-by-claim comparison; fixes drifted line numbers, marks unresolvable divergences `outdated`, logs them. |
 
@@ -315,6 +328,8 @@ Edit `sections` in `ragu.config.json`; the sidebar follows. Skills only rely on 
   }
 }
 ```
+
+`create-ragu install [system-id ...] [--config <path>] [--force] [--no-register]` connects repositories (see [Connect your repositories](#3-connect-your-repositories)).
 
 Scripts in a generated project:
 

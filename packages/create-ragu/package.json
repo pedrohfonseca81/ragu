@@ -11,6 +11,7 @@
     "bin",
     "src",
     "template",
+    "plugin",
     "README.md"
   ],
   "scripts": {

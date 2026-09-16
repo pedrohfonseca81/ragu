@@ -39,14 +39,13 @@ claude plugin marketplace add useperfit/ragu
 claude plugin install ragu@ragu
 ```
 
-**Antigravity** (IDE or `agy` CLI): copy this directory to `.agents/plugins/ragu/` in the repository (commit it so the whole team gets it), then register it once per machine — the CLI (1.2.3) does not discover workspace plugins by itself:
+**Antigravity** (IDE or `agy` CLI) — per workspace, done by `create-ragu`:
 
-```json
-// ~/.gemini/config/plugins.json
-{ "entries": [{ "path": "/abs/path/to/api/.agents/plugins" }] }
+```bash
+npx create-ragu install          # from the knowledge base or one of its systems
 ```
 
-A global copy under `~/.gemini/config/plugins/ragu/` also works. The hook command is relative to `hooks.json`, as Antigravity runs it from that directory. `agy plugin validate .agents/plugins/ragu` checks the layout.
+copies this directory to `.agents/plugins/ragu/` in each system's repository (commit it so the whole team gets it), writes `mcp_config.json` next to it, and registers the directory in `~/.gemini/config/plugins.json` — the CLI (1.2.3) does not discover workspace plugins by itself, so teammates run the same command once after cloning. Re-running upgrades the copy only when this plugin's `plugin.json` version is newer (`--force` overrides). A manual global copy under `~/.gemini/config/plugins/ragu/` also works. The hook command is relative to `hooks.json`, as Antigravity runs it from that directory. `agy plugin validate .agents/plugins/ragu` checks the layout.
 
 Local development (Claude Code):
 
