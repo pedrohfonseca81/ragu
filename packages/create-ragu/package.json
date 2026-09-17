@@ -1,6 +1,6 @@
 {
   "name": "create-ragu",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Scaffold a Ragu knowledge base: markdown docs validated by schema, published with Starlight, searchable by agents over MCP, kept in sync with your code by a Claude Code plugin.",
   "type": "module",
   "license": "MIT",
