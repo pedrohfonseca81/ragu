@@ -8,11 +8,11 @@ import type { ScaffoldAnswers, ScaffoldResult, SystemSpec } from "./types.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-const TEMPLATE_SKIP = new Set(["node_modules", "dist", ".astro", ".wrangler", "package-lock.json"]);
-const REMOTE_ONLY_FILES = ["src/worker", "wrangler.jsonc", ".github/workflows/reindex.yml", "src/wasm-stub.js"];
-const REMOTE_ONLY_DEPS = ["@cloudflare/workers-oauth-provider", "@modelcontextprotocol/server", "agents"];
-const REMOTE_ONLY_DEV_DEPS = ["wrangler", "@cloudflare/workers-types"];
-const REMOTE_ONLY_SCRIPTS = ["deploy", "predeploy"];
+export const TEMPLATE_SKIP = new Set(["node_modules", "dist", ".astro", ".wrangler", "package-lock.json"]);
+export const REMOTE_ONLY_FILES = ["src/worker", "wrangler.jsonc", ".github/workflows/reindex.yml", "src/wasm-stub.js"];
+export const REMOTE_ONLY_DEPS = ["@cloudflare/workers-oauth-provider", "@modelcontextprotocol/server", "agents"];
+export const REMOTE_ONLY_DEV_DEPS = ["wrangler", "@cloudflare/workers-types"];
+export const REMOTE_ONLY_SCRIPTS = ["deploy", "predeploy"];
 
 export const EXAMPLE_SYSTEMS: readonly SystemSpec[] = [
 	{ id: "api", path: "../api" },
@@ -32,6 +32,11 @@ interface PackageJson {
 	scripts: Record<string, string>;
 	dependencies?: Record<string, string>;
 	devDependencies?: Record<string, string>;
+}
+
+/** Without the remote worker, the Workers-only wasm alias goes; the rest of the `vite` block stays. */
+export function stripRemoteFromAstroConfig(source: string): string {
+	return source.replace(/\t\tresolve: \{\n\t\t\talias: \{[\s\S]*?\n\t\t\t\},\n\t\t\},\n/, "");
 }
 
 /** The packed copy (./template) wins; in the monorepo we use ../../template. */
@@ -123,9 +128,8 @@ export function scaffold(input: ScaffoldAnswers): ScaffoldResult {
 		);
 	} else {
 		for (const file of REMOTE_ONLY_FILES) rmSync(join(dest, file), { recursive: true, force: true });
-		// The wasm stub and its vite alias only matter for the Workers build.
 		const astro = join(dest, "astro.config.mjs");
-		writeFileSync(astro, readFileSync(astro, "utf-8").replace(/\tvite: \{[\s\S]*?\n\t\},\n/, ""));
+		writeFileSync(astro, stripRemoteFromAstroConfig(readFileSync(astro, "utf-8")));
 	}
 
 	if (!answers.example) writeEmptyDocs(dest, answers.systems);
@@ -223,6 +227,12 @@ Connect the code repositories (AGENTS.md block and \`.mcp.json\` in each) and re
 
 \`\`\`bash
 npx create-ragu install
+\`\`\`
+
+Update the site, theme and validation scripts to the latest template (content is never touched; review the diff, then \`npm install\`):
+
+\`\`\`bash
+npx create-ragu upgrade
 \`\`\`
 ${remote}
 ## Layout

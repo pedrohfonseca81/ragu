@@ -89,6 +89,12 @@ npx create-ragu install [system-id ...] [--config <path>] [--force]
 
 Commit those. On the machine that runs it, `install` also registers the knowledge base in `$XDG_CONFIG_HOME/ragu/knowledge-bases.json` (for `ragu-mcp`) and installs the Antigravity plugin in `~/.gemini/config/plugins/ragu/` when `~/.gemini` exists (`--force` reinstalls an equal or newer copy). It is idempotent; teammates run it once after cloning.
 
+```
+npx create-ragu upgrade [--config <path>] [--dry-run]
+```
+
+`upgrade` brings an existing knowledge base up to the template shipped with this version of `create-ragu`: `astro.config.mjs`, the site theme (`src/styles`, `src/components`, `src/pages`, `src/assets`, `public/`), `scripts/`, `AGENTS.md`, `CLAUDE.md`, the CI workflow, and the dependency versions and scripts in `package.json` (scripts and dependencies you added stay). Your content is never touched: `src/content/docs/`, `ragu.config.json`, `inbox/`, `templates/`, `README.md`, `wrangler.jsonc`. Files are replaced whole, so run it on a clean git tree, review the diff (local edits to `AGENTS.md` or the CI workflow need re-applying), then `npm install`. `--dry-run` lists the plan without writing.
+
 ## Obsidian
 
 Open `src/content/docs/` as a vault. Keep links as relative markdown (`[text](../domain/page.md)`), never `[[wikilinks]]`. `.obsidian/workspace*.json` is git-ignored by the template.

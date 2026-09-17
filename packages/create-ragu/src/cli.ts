@@ -9,6 +9,7 @@ import { installAntigravityPlugin } from "./plugin.ts";
 import { registerKnowledgeBase } from "./registry.ts";
 import { parseSystems, scaffold, slugify } from "./scaffold.ts";
 import type { InstallResult, ScaffoldAnswers, SystemSpec } from "./types.ts";
+import { upgrade } from "./upgrade.ts";
 
 const MARKETPLACE = "pedrohfonseca81/ragu";
 const CLAUDE_PLUGIN_INSTALL = `claude plugin marketplace add ${MARKETPLACE} && claude plugin install ragu@ragu`;
@@ -17,6 +18,7 @@ const HELP = `create-ragu: scaffold a code-backed knowledge base
 
 Usage: npx create-ragu [dir] [options]
        npx create-ragu install [system-id ...] [options]
+       npx create-ragu upgrade [options]
 
 Options:
   --name <kebab>           package/worker name (default: from dir)
@@ -36,6 +38,12 @@ install: connect code repositories to the knowledge base that governs the curren
   registered in $XDG_CONFIG_HOME/ragu/knowledge-bases.json (for ragu-mcp) and, when Antigravity is
   installed, the ragu plugin goes to ~/.gemini/config/plugins/ragu. Re-run any time; it is idempotent.
   --force                  overwrite the installed Antigravity plugin even if it is not older
+
+upgrade: bring the site and tooling of an existing knowledge base up to this version of the template:
+  astro.config.mjs, theme (src/styles, src/components, src/pages, src/assets, public), scripts/,
+  AGENTS.md, CLAUDE.md, CI workflow, and the dependency versions in package.json. Your content is
+  never touched (src/content/docs, ragu.config.json, inbox/, templates/, README.md). Review with git.
+  --dry-run                list what would change without writing
 `;
 
 /** Flags that take a value; every other `--x` is a boolean, and `--no-x` sets it to false. */
@@ -54,6 +62,7 @@ export interface Flags {
 	plugin?: boolean;
 	connect?: boolean;
 	force?: boolean;
+	"dry-run"?: boolean;
 }
 
 export interface ParsedArgs {
@@ -252,6 +261,34 @@ async function installCommand(flags: Flags, ids: string[]): Promise<void> {
 	p.outro("Done.");
 }
 
+async function upgradeCommand(flags: Flags): Promise<void> {
+	p.intro("create-ragu upgrade");
+	const configPath = flags.config ? resolve(flags.config) : await findConfig(process.cwd());
+	if (!configPath || !existsSync(configPath)) {
+		p.cancel("No ragu.config.json governs this directory. Run from the knowledge base, or pass --config <path>.");
+		process.exit(1);
+	}
+	const dryRun = Boolean(flags["dry-run"]);
+	const result = upgrade({ configPath, dryRun });
+	p.log.info(`knowledge base: ${relative(process.cwd(), result.root) || "."}${result.remote ? " (with remote worker)" : ""}${dryRun ? " — dry run, nothing written" : ""}`);
+	const changed = result.files.filter((f) => f.outcome !== "kept");
+	if (changed.length === 0) {
+		p.outro("Already up to date.");
+		return;
+	}
+	for (const file of changed) p.log.info(`${file.outcome.padEnd(7)} ${file.path}`);
+	p.log.info(`${result.files.length - changed.length} file(s) unchanged`);
+	if (!dryRun) {
+		const notes = [
+			"Review the diff (git diff) — AGENTS.md and the CI workflow are replaced whole, so re-apply any local edits.",
+			result.packageChanged ? "npm install                       # dependency versions changed" : null,
+			"npm run check && npm run dev      # validate, then look at the site",
+		].filter((line): line is string => line !== null);
+		p.note(notes.join("\n"), "Next steps");
+	}
+	p.outro("Done.");
+}
+
 export async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
 	const { flags, positional } = parseArgs(argv);
 	if (flags.help) {
@@ -259,5 +296,6 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
 		return;
 	}
 	if (positional[0] === "install") return installCommand(flags, positional.slice(1));
+	if (positional[0] === "upgrade") return upgradeCommand(flags);
 	return wizard(flags, positional);
 }
