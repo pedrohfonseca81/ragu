@@ -1,0 +1,26 @@
+flowchart TD
+    subgraph repos["your code repos"]
+        direction LR
+        api["api/"] ~~~ web["web/"] ~~~ worker["worker/"]
+    end
+
+    agent["<b>your agent</b> + ragu plugin<br/><i>Claude Code · Antigravity · any MCP client</i>"]
+
+    mcp["ragu-mcp<br/><i>local stdio · Cloudflare worker</i>"]
+
+    kb["<b>knowledge base</b><br/>ragu.config.json · src/content/docs/**/*.md<br/><i>check.mjs: frontmatter, links, sources, ADR numbering</i>"]
+
+    out["Starlight site · Obsidian vault · llms.txt"]
+
+    repos -- "changes (git status)" --> agent
+    agent -- "Stop hook: “code changed, these 3 pages cite it”<br/>ragu-sync · ragu-init · ragu-adr · ragu-audit" --> kb
+    agent -- "search_docs · get_document · list_documents" --> mcp --> kb
+    kb -. "sources: api/src/billing/refund.ts:42" .-> repos
+    kb -- "npm run build" --> out
+
+    classDef code fill:#fdf6ec,stroke:#c0392b,stroke-width:1.5px,color:#2b2b2b
+    classDef kbox fill:#c0392b,stroke:#c0392b,stroke-width:1.5px,color:#fdf6ec
+    classDef soft fill:#ffffff,stroke:#8a6d5a,stroke-width:1px,color:#2b2b2b,stroke-dasharray:4 3
+    class api,web,worker code
+    class kb kbox
+    class mcp,out soft

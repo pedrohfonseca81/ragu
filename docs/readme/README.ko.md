@@ -1,4 +1,4 @@
-<!-- source: README.md@c4a6e00f8d37 -->
+<!-- source: README.md@be41b52a2769 -->
 <p align="center">
   <img src="../../assets/ragu-banner.png" alt="Ragu" width="720">
 </p>
@@ -22,29 +22,9 @@ Ragu는 비즈니스 규칙, 흐름, 연동, 의사결정을 위한 markdown 지
 
 사람에게는 같은 파일로부터 [Starlight](https://starlight.astro.build) 사이트와 Obsidian 볼트가 만들어집니다. 서비스 뒤에 숨은 것은 없습니다. markdown, JSON 설정 하나, 그리고 몇백 줄의 Node뿐입니다.
 
-```
-                  ┌──────────────────────────────────────────────────────────┐
-                  │                    your code repos                       │
-                  │        api/            web/           worker/            │
-                  └───────┬─────────────────────────────────────▲────────────┘
-        changes           │                                     │  reads rules,
-        (git status)      │                                     │  flows, ADRs
-                          ▼                                     │
-   ┌──── your agent + ragu plugin ─────────────────────┐   ┌────┴─────────────┐
-   │  Stop hook: "code changed, these 3 pages cite it" │   │  any MCP client  │
-   │  ragu-sync  ragu-init  ragu-adr  ragu-audit       │   │                  │
-   └───────────────────────┬───────────────────────────┘   └────▲─────────────┘
-                           │ edits                               │ search_docs
-                           ▼                                     │ get_document
-   ┌───────────────────────────────────────────────┐             │ list_documents
-   │        knowledge base  (markdown + config)    │             │
-   │  ragu.config.json   src/content/docs/**/*.md  │◄────────────┤
-   │  scripts/check.mjs  →  frontmatter, links,    │   ragu-mcp (local, stdio)
-   │                        sources, ADR numbering │   or Cloudflare worker (remote)
-   └───────────────────────┬───────────────────────┘
-                           ▼
-                Starlight site · Obsidian vault · llms.txt
-```
+<p align="center">
+  <img src="../../assets/ragu-flow.svg" alt="Code changes reach the agent; the plugin writes the knowledge base and reads it over ragu-mcp; pages cite code back with sources; the build publishes site, vault and llms.txt" width="720">
+</p>
 
 ## 빠른 시작
 

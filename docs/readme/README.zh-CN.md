@@ -1,4 +1,4 @@
-<!-- source: README.md@c4a6e00f8d37 -->
+<!-- source: README.md@be41b52a2769 -->
 <p align="center">
   <img src="../../assets/ragu-banner.png" alt="Ragu" width="720">
 </p>
@@ -22,29 +22,9 @@ Ragu 为业务规则、流程、集成和决策提供一个 markdown 知识库�
 
 人类则从同一批文件得到一个 [Starlight](https://starlight.astro.build) 站点和一个 Obsidian 库。没有任何东西藏在服务背后：只是 markdown、一个 JSON 配置和几百行 Node。
 
-```
-                  ┌──────────────────────────────────────────────────────────┐
-                  │                    your code repos                       │
-                  │        api/            web/           worker/            │
-                  └───────┬─────────────────────────────────────▲────────────┘
-        changes           │                                     │  reads rules,
-        (git status)      │                                     │  flows, ADRs
-                          ▼                                     │
-   ┌──── your agent + ragu plugin ─────────────────────┐   ┌────┴─────────────┐
-   │  Stop hook: "code changed, these 3 pages cite it" │   │  any MCP client  │
-   │  ragu-sync  ragu-init  ragu-adr  ragu-audit       │   │                  │
-   └───────────────────────┬───────────────────────────┘   └────▲─────────────┘
-                           │ edits                               │ search_docs
-                           ▼                                     │ get_document
-   ┌───────────────────────────────────────────────┐             │ list_documents
-   │        knowledge base  (markdown + config)    │             │
-   │  ragu.config.json   src/content/docs/**/*.md  │◄────────────┤
-   │  scripts/check.mjs  →  frontmatter, links,    │   ragu-mcp (local, stdio)
-   │                        sources, ADR numbering │   or Cloudflare worker (remote)
-   └───────────────────────┬───────────────────────┘
-                           ▼
-                Starlight site · Obsidian vault · llms.txt
-```
+<p align="center">
+  <img src="../../assets/ragu-flow.svg" alt="Code changes reach the agent; the plugin writes the knowledge base and reads it over ragu-mcp; pages cite code back with sources; the build publishes site, vault and llms.txt" width="720">
+</p>
 
 ## 快速开始
 

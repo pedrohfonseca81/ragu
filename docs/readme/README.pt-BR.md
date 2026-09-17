@@ -1,4 +1,4 @@
-<!-- source: README.md@c4a6e00f8d37 -->
+<!-- source: README.md@be41b52a2769 -->
 <p align="center">
   <img src="../../assets/ragu-banner.png" alt="Ragu" width="720">
 </p>
@@ -22,29 +22,9 @@ O Ragu te dá uma base de conhecimento em markdown para regras de negócio, flux
 
 Humanos ganham um site [Starlight](https://starlight.astro.build) e um vault do Obsidian a partir dos mesmos arquivos. Nada fica escondido atrás de um serviço: é markdown, um JSON de configuração e algumas centenas de linhas de Node.
 
-```
-                  ┌──────────────────────────────────────────────────────────┐
-                  │                    your code repos                       │
-                  │        api/            web/           worker/            │
-                  └───────┬─────────────────────────────────────▲────────────┘
-        changes           │                                     │  reads rules,
-        (git status)      │                                     │  flows, ADRs
-                          ▼                                     │
-   ┌──── your agent + ragu plugin ─────────────────────┐   ┌────┴─────────────┐
-   │  Stop hook: "code changed, these 3 pages cite it" │   │  any MCP client  │
-   │  ragu-sync  ragu-init  ragu-adr  ragu-audit       │   │                  │
-   └───────────────────────┬───────────────────────────┘   └────▲─────────────┘
-                           │ edits                               │ search_docs
-                           ▼                                     │ get_document
-   ┌───────────────────────────────────────────────┐             │ list_documents
-   │        knowledge base  (markdown + config)    │             │
-   │  ragu.config.json   src/content/docs/**/*.md  │◄────────────┤
-   │  scripts/check.mjs  →  frontmatter, links,    │   ragu-mcp (local, stdio)
-   │                        sources, ADR numbering │   or Cloudflare worker (remote)
-   └───────────────────────┬───────────────────────┘
-                           ▼
-                Starlight site · Obsidian vault · llms.txt
-```
+<p align="center">
+  <img src="../../assets/ragu-flow.svg" alt="Code changes reach the agent; the plugin writes the knowledge base and reads it over ragu-mcp; pages cite code back with sources; the build publishes site, vault and llms.txt" width="720">
+</p>
 
 ## Início rápido
 

@@ -20,29 +20,9 @@ Ragu gives you a markdown knowledge base for business rules, flows, integrations
 
 Humans get a [Starlight](https://starlight.astro.build) site and an Obsidian vault from the same files. Nothing is hidden behind a service: it is markdown, a JSON config, and a few hundred lines of Node.
 
-```
-                  ┌──────────────────────────────────────────────────────────┐
-                  │                    your code repos                       │
-                  │        api/            web/           worker/            │
-                  └───────┬─────────────────────────────────────▲────────────┘
-        changes           │                                     │  reads rules,
-        (git status)      │                                     │  flows, ADRs
-                          ▼                                     │
-   ┌──── your agent + ragu plugin ─────────────────────┐   ┌────┴─────────────┐
-   │  Stop hook: "code changed, these 3 pages cite it" │   │  any MCP client  │
-   │  ragu-sync  ragu-init  ragu-adr  ragu-audit       │   │                  │
-   └───────────────────────┬───────────────────────────┘   └────▲─────────────┘
-                           │ edits                               │ search_docs
-                           ▼                                     │ get_document
-   ┌───────────────────────────────────────────────┐             │ list_documents
-   │        knowledge base  (markdown + config)    │             │
-   │  ragu.config.json   src/content/docs/**/*.md  │◄────────────┤
-   │  scripts/check.mjs  →  frontmatter, links,    │   ragu-mcp (local, stdio)
-   │                        sources, ADR numbering │   or Cloudflare worker (remote)
-   └───────────────────────┬───────────────────────┘
-                           ▼
-                Starlight site · Obsidian vault · llms.txt
-```
+<p align="center">
+  <img src="assets/ragu-flow.svg" alt="Code changes reach the agent; the plugin writes the knowledge base and reads it over ragu-mcp; pages cite code back with sources; the build publishes site, vault and llms.txt" width="720">
+</p>
 
 ## Quick start
 

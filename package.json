@@ -13,7 +13,8 @@
     "check:template": "npm run check --workspace template",
     "build:template": "npm run build --workspace template",
     "check:i18n": "node scripts/check-readme-i18n.mjs",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "diagram": "npx -y @mermaid-js/mermaid-cli -i assets/ragu-flow.mmd -o assets/ragu-flow.svg -b transparent -c assets/ragu-flow.config.json"
   },
   "engines": {
     "node": ">=20"
