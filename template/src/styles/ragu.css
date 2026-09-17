@@ -1,0 +1,113 @@
+/* Ragu theme: charcoal and off-white surfaces, neutral greys, tomato red as the one accent
+   (see assets/ragu-banner.png). Red is for emphasis — the current page, underlines, hover — not for body links. */
+
+:root {
+	--sl-font: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Dark (default) */
+:root {
+	--sl-color-accent-low: #3d1a16;
+	--sl-color-accent: #c0392b;
+	--sl-color-accent-high: #f2a597;
+
+	--sl-color-white: #f6f1ea;
+	--sl-color-gray-1: #ebe7e2;
+	--sl-color-gray-2: #d4d0cc;
+	--sl-color-gray-3: #8f8b8b;
+	--sl-color-gray-4: #5b5858;
+	--sl-color-gray-5: #3b3939;
+	--sl-color-gray-6: #2c2b2b;
+	--sl-color-black: #232222;
+
+	--sl-color-text-accent: var(--sl-color-white);
+	--sl-color-bg-inline-code: #333131;
+}
+
+/* Light */
+:root[data-theme='light'] {
+	--sl-color-accent-low: #fbe3df;
+	--sl-color-accent: #c0392b;
+	--sl-color-accent-high: #8a2419;
+
+	--sl-color-white: #211f1e;
+	--sl-color-gray-1: #33302e;
+	--sl-color-gray-2: #4d4946;
+	--sl-color-gray-3: #7d7873;
+	--sl-color-gray-4: #a9a49d;
+	--sl-color-gray-5: #d9d5ce;
+	--sl-color-gray-6: #edeae4;
+	--sl-color-gray-7: #f4f1ec;
+	--sl-color-black: #faf8f5;
+
+	--sl-color-text-accent: var(--sl-color-white);
+	--sl-color-bg-inline-code: #eeebe6;
+}
+
+/* Body links: text colour with a red underline; red on hover. */
+.sl-markdown-content a:not(:where(.not-content *)) {
+	color: var(--sl-color-white);
+	text-decoration: underline;
+	text-decoration-color: var(--sl-color-accent);
+	text-decoration-thickness: 1.5px;
+	text-underline-offset: 3px;
+}
+.sl-markdown-content a:not(:where(.not-content *)):hover {
+	color: var(--sl-color-accent);
+}
+
+/* Current page in the sidebar and the table of contents. */
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover,
+.sidebar-content a[aria-current='page']:focus {
+	background-color: var(--sl-color-accent);
+	color: #f6f1ea;
+	font-weight: 600;
+}
+starlight-toc a[aria-current='true'] {
+	color: var(--sl-color-accent);
+}
+.sidebar-content a:hover,
+starlight-toc a:hover {
+	color: var(--sl-color-accent);
+}
+
+/* Headings: tighter tracking reads more contemporary. */
+.sl-markdown-content :is(h1, h2, h3),
+h1[data-page-title] {
+	letter-spacing: -0.02em;
+}
+.site-title {
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+
+/* Mermaid text that sits directly on the page (see astro.config.mjs): light in dark mode. */
+:root:not([data-theme='light']) .mermaid :is(.messageText, .loopText, .loopText > tspan, .sequenceNumber ~ text) {
+	fill: var(--sl-color-gray-2) !important;
+}
+
+/* Site graph (starlight-site-graph) in the palette. */
+:root {
+	--slsg-graph-minimized-bg-color: var(--sl-color-gray-6);
+	--slsg-graph-maximized-bg-color: var(--sl-color-black);
+	--slsg-graph-outline-color: var(--sl-color-gray-5);
+	--slsg-text-color: var(--sl-color-gray-2);
+	--slsg-text-color-accent: var(--sl-color-gray-1);
+	--slsg-color-accent: var(--sl-color-accent);
+	--slsg-color-muted: var(--sl-color-gray-4);
+	--slsg-link-color: var(--sl-color-gray-4);
+	--slsg-node-color: var(--sl-color-gray-2);
+	--slsg-node-color-adjacent: var(--sl-color-gray-3);
+	--slsg-node-color-current: var(--sl-color-accent);
+	--slsg-node-color-visited: var(--sl-color-gray-3);
+	--slsg-node-color-unresolved: var(--sl-color-gray-4);
+}
+:root[data-theme='light'] {
+	--slsg-node-color: var(--sl-color-gray-2);
+	--slsg-node-color-adjacent: var(--sl-color-gray-3);
+	--slsg-link-color: var(--sl-color-gray-5);
+}
+.slsg-backlinks-panel a:hover {
+	color: var(--sl-color-accent);
+}

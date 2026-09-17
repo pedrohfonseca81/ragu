@@ -1,0 +1,17 @@
+---
+// Right sidebar: the page's neighbourhood in the graph, the table of contents, then backlinks.
+// Replaces starlight-site-graph's own override, which needs translations this plugin cannot inject
+// (see scripts/lib/site-graph-plugin.mjs).
+import Default from '@astrojs/starlight/components/PageSidebar.astro';
+import { PageGraph, PageBacklinks } from 'starlight-site-graph/components';
+---
+
+<PageGraph class="right-sidebar-panel slsg-graph-panel">
+	<h2 slot="title">Graph</h2>
+</PageGraph>
+
+<Default><slot /></Default>
+
+<PageBacklinks class="right-sidebar-panel slsg-backlinks-panel">
+	<h2 slot="title">Backlinks</h2>
+</PageBacklinks>

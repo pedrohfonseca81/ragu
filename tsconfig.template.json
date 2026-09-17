@@ -6,7 +6,14 @@
     "checkJs": true,
     "declaration": false,
     "declarationMap": false,
-    "sourceMap": false
+    "sourceMap": false,
+    "paths": {
+      "starlight-site-graph/*": [
+        "./template/scripts/lib/types/starlight-site-graph/*.d.ts"
+      ]
+    }
   },
-  "include": ["template/scripts/**/*.mjs"]
+  "include": [
+    "template/scripts/**/*.mjs"
+  ]
 }

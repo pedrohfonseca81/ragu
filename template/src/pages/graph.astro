@@ -1,0 +1,18 @@
+---
+// Whole knowledge base as a graph (Obsidian-style): every page is a node, every link an edge.
+// Powered by starlight-site-graph; the per-page graph lives in the right sidebar.
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { PageGraph } from 'starlight-site-graph/components';
+---
+
+<StarlightPage frontmatter={{ title: 'Graph', tableOfContents: false }} hasSidebar={true}>
+	<p>Every page of the knowledge base and the links between them. Drag to pan, scroll to zoom, click a node to open the page.</p>
+	<PageGraph class="ragu-full-graph" showGraph={true} slug="/" config={{ depth: -1, scale: 1.4, renderLabels: true, renderArrows: false, actions: ['fullscreen', 'reset-zoom', 'settings'] }} />
+</StarlightPage>
+
+<style>
+	.ragu-full-graph {
+		--slsg-graph-width: 100%;
+		--slsg-graph-height: min(70vh, 720px);
+	}
+</style>
