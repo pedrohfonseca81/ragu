@@ -1,14 +1,15 @@
 #!/usr/bin/env node
+// @ts-check
 // Usage: ragu-mcp [--root <dir>] [--no-watch]
 // Starts a stdio MCP server over the Ragu knowledge base found at --root, or the one that governs
 // cwd (upwards, a configured sibling, or the monorepo containing cwd; same rules as the plugin hook),
 // or $PWD, or else every knowledge base registered on this machine by `create-ragu install`.
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
-import { createServerFactory, createState, findConfigFile, registryFile, resolveConfigs } from "../src/index.mjs";
+import { createServerFactory, createState, findConfigFile, registryFile, resolveConfigs } from "../dist/index.js";
 
 const args = process.argv.slice(2);
 const rootIdx = args.indexOf("--root");
-const root = rootIdx >= 0 ? args[rootIdx + 1] : process.cwd();
+const root = (rootIdx >= 0 ? args[rootIdx + 1] : undefined) ?? process.cwd();
 const watchFiles = !args.includes("--no-watch");
 
 if (args.includes("--help") || args.includes("-h")) {
@@ -30,9 +31,11 @@ Add to Claude Code:
 }
 
 // stdout is the MCP wire; every log line goes to stderr.
+/** @param {string} msg */
 const log = (msg) => console.error(`ragu-mcp: ${msg}`);
 
-const configPaths = rootIdx >= 0 ? [findConfigFile(root)].filter(Boolean) : resolveConfigs(root, { log });
+const explicit = rootIdx >= 0 ? findConfigFile(root) : null;
+const configPaths = rootIdx >= 0 ? (explicit ? [explicit] : []) : resolveConfigs(root, { log });
 if (!configPaths.length) {
 	log(
 		rootIdx >= 0

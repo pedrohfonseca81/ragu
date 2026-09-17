@@ -1,15 +1,44 @@
+// @ts-check
 // Minimal ragu.config.json loader for the hook. Mirrors template/scripts/lib/config.mjs
 // (kept separate so the plugin has no dependency on the knowledge base's own scripts).
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
+/**
+ * @typedef {object} SystemSpec
+ * @property {string} id
+ * @property {string} path  Absolute.
+ *
+ * @typedef {object} HookConfig
+ * @property {string[]} codeExtensions
+ * @property {string[]} ignore
+ *
+ * @typedef {object} RaguConfig  ragu.config.json with absolute paths and defaults applied.
+ * @property {string} root
+ * @property {string} name
+ * @property {string} docsDir
+ * @property {SystemSpec[]} systems
+ * @property {HookConfig} hook
+ *
+ * @typedef {object} ResolvedSource  A `sources:` entry resolved against the config.
+ * @property {string} systemId
+ * @property {string} relPath
+ * @property {number | null} line
+ * @property {string} absPath
+ */
+
+/** @type {HookConfig} */
 export const DEFAULT_HOOK = {
 	codeExtensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".py", ".ex", ".exs", ".go", ".rs", ".rb", ".java", ".kt", ".sql"],
 	ignore: ["node_modules", "dist", "_build", "deps", ".git", ".agents", ".agent", ".claude", ".gemini"],
 };
 
-/** Walks up from `start` until a ragu.config.json is found. */
+/**
+ * Walks up from `start` until a ragu.config.json is found.
+ * @param {string} start
+ * @returns {string | null}
+ */
 export function findConfigFile(start) {
 	let dir = resolve(start);
 	for (;;) {
@@ -21,7 +50,11 @@ export function findConfigFile(start) {
 	}
 }
 
-/** Absolute path of the git working tree that contains `dir`, or null. */
+/**
+ * Absolute path of the git working tree that contains `dir`, or null.
+ * @param {string} dir
+ * @returns {string | null}
+ */
 export function gitToplevel(dir) {
 	if (!existsSync(dir)) return null;
 	const res = spawnSync("git", ["rev-parse", "--show-toplevel"], { cwd: dir, encoding: "utf-8", timeout: 10_000 });
@@ -33,6 +66,8 @@ export function gitToplevel(dir) {
  * Absolute path of the repository's common `.git` directory. Linked worktrees created with
  * `git worktree add` share it with the main working tree, which is how we tell that two
  * directories are checkouts of the same repository. Null outside a repository.
+ * @param {string} dir
+ * @returns {string | null}
  */
 export function gitCommonDir(dir) {
 	if (!existsSync(dir)) return null;
@@ -45,7 +80,11 @@ export function gitCommonDir(dir) {
 	return resolve(dir, res.stdout.trim());
 }
 
-/** Absolute path of the main working tree of the repository containing `dir`, or null. */
+/**
+ * Absolute path of the main working tree of the repository containing `dir`, or null.
+ * @param {string} dir
+ * @returns {string | null}
+ */
 export function gitMainWorktree(dir) {
 	if (!existsSync(dir)) return null;
 	const res = spawnSync("git", ["worktree", "list", "--porcelain"], { cwd: dir, encoding: "utf-8", timeout: 10_000 });
@@ -54,7 +93,11 @@ export function gitMainWorktree(dir) {
 	return first ? resolve(first.slice("worktree ".length)) : null;
 }
 
-/** True when `a` and `b` are checkouts (main or linked worktree) of the same repository. */
+/**
+ * True when `a` and `b` are checkouts (main or linked worktree) of the same repository.
+ * @param {string} a
+ * @param {string} b
+ */
 export function sameRepo(a, b) {
 	const ca = gitCommonDir(a);
 	return ca != null && ca === gitCommonDir(b);
@@ -64,6 +107,9 @@ export function sameRepo(a, b) {
  * The system paths that apply when working from `cwd`. When `cwd` is inside a linked git
  * worktree of a system's repository, that system's path is redirected to the worktree so the
  * hook inspects the checkout actually being edited instead of the main working tree.
+ * @param {RaguConfig} config
+ * @param {string} cwd
+ * @returns {RaguConfig}
  */
 export function forWorkingTree(config, cwd) {
 	const top = gitToplevel(cwd);
@@ -76,6 +122,10 @@ export function forWorkingTree(config, cwd) {
 	return { ...config, systems };
 }
 
+/**
+ * @param {string} child
+ * @param {string} parent
+ */
 function isInside(child, parent) {
 	const rel = relative(parent, child);
 	return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
@@ -90,6 +140,8 @@ function isInside(child, parent) {
  *     knowledge base or inside one of its configured systems; if `cwd` is a linked git
  *     worktree of one of the systems; or if `cwd` is the workspace that contains both the
  *     knowledge base and at least one of its systems (sibling layout or monorepo root).
+ * @param {string} cwd
+ * @returns {string | null}
  */
 export function findConfigFor(cwd) {
 	const start = resolve(cwd);
@@ -99,6 +151,7 @@ export function findConfigFor(cwd) {
 
 	let dir = start;
 	for (;;) {
+		/** @type {import("node:fs").Dirent[]} */
 		let entries = [];
 		try {
 			entries = readdirSync(dir, { withFileTypes: true });
@@ -124,7 +177,12 @@ export function findConfigFor(cwd) {
 	}
 }
 
+/**
+ * @param {string} configPath
+ * @returns {RaguConfig}
+ */
 export function loadConfig(configPath) {
+	/** @type {{ name?: string, docsDir?: string, systems?: { id: string, path: string }[], hook?: Partial<HookConfig> }} */
 	const raw = JSON.parse(readFileSync(configPath, "utf-8"));
 	const root = dirname(resolve(configPath));
 	// Relative system paths are meant from the kb's main working tree. When the config is read
@@ -133,13 +191,14 @@ export function loadConfig(configPath) {
 	const systemsBase = mainTreeEquivalent(root);
 	return {
 		root,
-		name: raw.name,
+		name: raw.name ?? "",
 		docsDir: resolve(root, raw.docsDir ?? "src/content/docs"),
 		systems: (raw.systems ?? []).map((s) => ({ id: s.id, path: resolve(systemsBase, s.path) })),
 		hook: { ...DEFAULT_HOOK, ...(raw.hook ?? {}) },
 	};
 }
 
+/** @param {string} dir */
 function mainTreeEquivalent(dir) {
 	const top = gitToplevel(dir);
 	if (!top) return dir;
@@ -148,11 +207,16 @@ function mainTreeEquivalent(dir) {
 	return join(main, relative(top, dir));
 }
 
-/** Resolves `<system-id>/<path>[:line]` to an absolute path, or null when the system is unknown. */
+/**
+ * Resolves `<system-id>/<path>[:line]` to an absolute path, or null when the system is unknown.
+ * @param {string} entry
+ * @param {RaguConfig} config
+ * @returns {ResolvedSource | null}
+ */
 export function resolveSource(entry, config) {
 	const m = /^([^/]+)\/(.+?)(?::(\d+)(?:-(\d+))?)?$/.exec(String(entry).trim());
 	if (!m) return null;
-	const [, systemId, relPath, line] = m;
+	const [, systemId = "", relPath = "", line] = m;
 	const system = config.systems.find((s) => s.id === systemId);
 	if (!system) return null;
 	return { systemId, relPath, line: line ? Number(line) : null, absPath: join(system.path, relPath) };

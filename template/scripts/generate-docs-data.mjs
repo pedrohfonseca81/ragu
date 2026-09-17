@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 // Bundles src/content/docs/**/*.md into src/worker/docs-data.generated.json.
 // Runs before build/deploy so the remote MCP worker ships the latest content.
 // The local MCP server (ragu-mcp) reads the markdown directly and does not need this file.
@@ -25,7 +26,10 @@ function gitSha() {
 	}
 }
 
-const docs = walkMarkdown(config.docsDir).map((filePath) => {
+/** @param {unknown} value */
+const asDate = (value) => (typeof value === "string" || value instanceof Date ? new Date(value).toISOString().slice(0, 10) : null);
+
+const docs = walkMarkdown(config.docsDir).map((/** @type {string} */ filePath) => {
 	const { data: fm, content } = matter(readFileSync(filePath, "utf-8"));
 	const path = relative(config.docsDir, filePath).replace(/\\/g, "/");
 	return {
@@ -34,7 +38,7 @@ const docs = walkMarkdown(config.docsDir).map((filePath) => {
 		domain: fm.domain ?? null,
 		systems: fm.systems ?? [],
 		status: fm.status ?? "unverified",
-		updated_at: fm.updated_at ? new Date(fm.updated_at).toISOString().slice(0, 10) : null,
+		updated_at: asDate(fm.updated_at),
 		content: content.trim(),
 	};
 });

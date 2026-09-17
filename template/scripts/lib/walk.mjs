@@ -1,8 +1,14 @@
+// @ts-check
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-/** Recursively lists .md/.mdx files under `dir`, sorted for stable output. */
+/**
+ * Recursively lists .md/.mdx files under `dir`, sorted for stable output.
+ * @param {string} dir
+ * @returns {string[]}
+ */
 export function walkMarkdown(dir) {
+	/** @type {string[]} */
 	const files = [];
 	for (const entry of readdirSync(dir)) {
 		const full = join(dir, entry);

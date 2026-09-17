@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false
+  },
+  "include": [
+    "plugins/ragu/hooks/**/*.mjs",
+    "plugins/ragu/test/**/*.ts",
+    "packages/*/test/**/*.ts",
+    "packages/*/bin/*.mjs",
+    "packages/*/scripts/*.mjs",
+    "scripts/*.mjs"
+  ]
+}

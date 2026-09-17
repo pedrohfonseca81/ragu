@@ -4,20 +4,20 @@ import { mkdtempSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { install, upsertBlock, agentsBlock, compareVersions, installAntigravityPlugin, registerKnowledgeBase, registryFile, antigravityPluginDir, BLOCK_START, BLOCK_END } from "../src/install.mjs";
-import { scaffold } from "../src/scaffold.mjs";
+import { BLOCK_END, BLOCK_START, agentsBlock, antigravityPluginDir, compareVersions, install, installAntigravityPlugin, registerKnowledgeBase, registryFile, scaffold, upsertBlock } from "../src/index.ts";
+import type { SystemSpec } from "../src/index.ts";
 
-function git(cwd, ...args) {
+function git(cwd: string, ...args: string[]): void {
 	const r = spawnSync("git", args, { cwd, encoding: "utf-8" });
 	if (r.status !== 0) throw new Error(`git ${args.join(" ")} failed: ${r.stderr}`);
 }
 
-function initRepo(dir) {
+function initRepo(dir: string): void {
 	mkdirSync(dir, { recursive: true });
 	git(dir, "init", "-q");
 }
 
-function writeKb(kb, systems) {
+function writeKb(kb: string, systems: SystemSpec[]): void {
 	mkdirSync(join(kb, "src", "content", "docs"), { recursive: true });
 	writeFileSync(join(kb, "ragu.config.json"), JSON.stringify({ name: "acme-kb", title: "Acme", systems }));
 	writeFileSync(join(kb, "AGENTS.md"), "# KB rules\n");
@@ -74,14 +74,14 @@ test("install connects sibling repos and the kb itself, idempotently", async () 
 
 		const r1 = await install({ configPath: ws.configPath, home: ws.home, env: ws.env });
 		assert.deepEqual(r1.targets.map((t) => t.ids), [["api"], ["web"]]);
-		const api = r1.targets[0];
+		const api = r1.targets[0]!;
 		assert.equal(api.root, ws.api);
 		assert.equal(api.agents, "updated");
 		assert.equal(api.claude, "updated");
 		assert.equal(api.mcp, "created");
 		assert.equal(r1.registry, "registered");
 		assert.equal(r1.antigravity, "installed");
-		const web = r1.targets[1];
+		const web = r1.targets[1]!;
 		assert.equal(web.agents, "created");
 		assert.equal(web.claude, "created");
 
@@ -91,7 +91,7 @@ test("install connects sibling repos and the kb itself, idempotently", async () 
 		assert.match(agents, /`\.\.\/kb\/`/);
 		assert.equal(readFileSync(join(ws.api, "CLAUDE.md"), "utf-8"), "@AGENTS.md\n\n# Claude notes\n");
 		assert.equal(readFileSync(join(ws.web, "CLAUDE.md"), "utf-8"), "@AGENTS.md\n");
-		const mcp = JSON.parse(readFileSync(join(ws.api, ".mcp.json"), "utf-8"));
+		const mcp = JSON.parse(readFileSync(join(ws.api, ".mcp.json"), "utf-8")) as { mcpServers: Record<string, unknown> };
 		assert.deepEqual(Object.keys(mcp.mcpServers), ["other", "acme-kb"]);
 		assert.deepEqual(mcp.mcpServers["acme-kb"], { command: "npx", args: ["-y", "ragu-mcp"] });
 		// nothing harness-specific lands in the repositories
@@ -102,7 +102,7 @@ test("install connects sibling repos and the kb itself, idempotently", async () 
 		assert.equal(readFileSync(join(ws.kb, "AGENTS.md"), "utf-8"), "# KB rules\n");
 
 		// per user: registry entry + Antigravity plugin (home has ~/.gemini)
-		const reg = JSON.parse(readFileSync(registryFile({ home: ws.home, env: ws.env }), "utf-8"));
+		const reg: unknown = JSON.parse(readFileSync(registryFile({ home: ws.home, env: ws.env }), "utf-8"));
 		assert.deepEqual(reg, { knowledgeBases: [{ name: "acme-kb", config: ws.configPath }] });
 		const plugin = antigravityPluginDir(ws.home);
 		assert.equal(plugin, join(ws.home, ".gemini", "config", "plugins", "ragu"));
@@ -175,8 +175,8 @@ test("install in a monorepo writes once at the git root and lists every system",
 		mkdirSync(home);
 		const r = await install({ configPath: join(kb, "ragu.config.json"), home, env: { XDG_CONFIG_HOME: join(home, ".config") } });
 		assert.equal(r.targets.length, 1);
-		assert.equal(r.targets[0].root, root);
-		assert.deepEqual(r.targets[0].ids, ["api", "web"]);
+		assert.equal(r.targets[0]?.root, root);
+		assert.deepEqual(r.targets[0]?.ids, ["api", "web"]);
 		const agents = readFileSync(join(root, "AGENTS.md"), "utf-8");
 		assert.match(agents, /system `api`, `web`/);
 		assert.match(agents, /`knowledge-base\/`/);
@@ -192,8 +192,8 @@ test("install reports missing system paths instead of failing", async () => {
 	try {
 		writeFileSync(ws.configPath, JSON.stringify({ name: "acme-kb", systems: [{ id: "api", path: "../api" }, { id: "gone", path: "../gone" }] }));
 		const r = await install({ configPath: ws.configPath, home: ws.home, env: ws.env });
-		assert.equal(r.targets[0].agents, "created");
-		assert.match(r.targets[1].error, /path not found/);
+		assert.equal(r.targets[0]?.agents, "created");
+		assert.match(r.targets[1]?.error ?? "", /path not found/);
 	} finally {
 		rmSync(ws.root, { recursive: true, force: true });
 	}
@@ -214,7 +214,7 @@ test("registerKnowledgeBase: XDG or ~/.config, dedupes by config path, renames, 
 		writeFileSync(a, "{}");
 		writeFileSync(b, "{}");
 		const file = join(home, ".config", "ragu", "knowledge-bases.json");
-		const read = () => JSON.parse(readFileSync(file, "utf-8")).knowledgeBases;
+		const read = (): { name: string; config: string }[] => (JSON.parse(readFileSync(file, "utf-8")) as { knowledgeBases: { name: string; config: string }[] }).knowledgeBases;
 
 		assert.equal(registerKnowledgeBase(a, "a", { home, env: {} }), "registered");
 		assert.equal(registerKnowledgeBase(a, "a", { home, env: {} }), "kept");
@@ -222,7 +222,7 @@ test("registerKnowledgeBase: XDG or ~/.config, dedupes by config path, renames, 
 		assert.equal(registerKnowledgeBase(b, "b", { home, env: {} }), "registered");
 		assert.deepEqual(read(), [{ name: "a", config: a }, { name: "b", config: b }]);
 		assert.equal(registerKnowledgeBase(a, "a-renamed", { home, env: {} }), "updated");
-		assert.equal(read()[0].name, "a-renamed");
+		assert.equal(read()[0]?.name, "a-renamed");
 
 		// b disappears: pruned on the next write, even one that changes nothing else
 		rmSync(join(root, "b"), { recursive: true });

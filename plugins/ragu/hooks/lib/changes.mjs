@@ -1,3 +1,4 @@
+// @ts-check
 // Detects uncommitted changes in the configured systems and in the knowledge base,
 // and maps changed code files back to the docs that cite them in `sources:`.
 import { existsSync, readFileSync } from "node:fs";
@@ -5,9 +6,25 @@ import { spawnSync } from "node:child_process";
 import { extname, join, relative } from "node:path";
 import { gitToplevel, resolveSource } from "./config.mjs";
 
+/** @typedef {import("./config.mjs").RaguConfig} RaguConfig */
+/** @typedef {import("./config.mjs").HookConfig} HookConfig */
+
+/**
+ * @typedef {object} SystemChanges  Uncommitted code files of one system, relative to its path.
+ * @property {string} systemId
+ * @property {string} path
+ * @property {string[]} files
+ *
+ * @typedef {object} StaleDoc  A page whose `sources:` cite changed files.
+ * @property {string} doc  Relative to docsDir.
+ * @property {string[]} hits  The citing `sources:` entries.
+ */
+
 /**
  * Uncommitted (modified, added, untracked, renamed) paths under `repoDir`, relative to it.
  * `repoDir` may be a subdirectory of the repository (monorepo layouts).
+ * @param {string} repoDir
+ * @returns {string[]}
  */
 export function gitChangedFiles(repoDir) {
 	const top = gitToplevel(repoDir);
@@ -22,7 +39,12 @@ export function gitChangedFiles(repoDir) {
 	return parsePorcelain(res.stdout).map((p) => relative(repoDir, join(top, p)).replace(/\\/g, "/"));
 }
 
+/**
+ * @param {string} stdout
+ * @returns {string[]}
+ */
 export function parsePorcelain(stdout) {
+	/** @type {string[]} */
 	const files = [];
 	for (const line of stdout.split("\n")) {
 		if (line.length < 4) continue;
@@ -36,14 +58,23 @@ export function parsePorcelain(stdout) {
 	return files;
 }
 
+/**
+ * @param {string} path
+ * @param {HookConfig} hookConfig
+ */
 export function isCodeFile(path, hookConfig) {
 	const segments = path.split("/");
 	if (segments.some((s) => hookConfig.ignore.includes(s))) return false;
 	return hookConfig.codeExtensions.includes(extname(path).toLowerCase());
 }
 
-/** @returns {{ systemId: string, files: string[] }[]} code changes per system */
+/**
+ * Code changes per system.
+ * @param {RaguConfig} config
+ * @returns {SystemChanges[]}
+ */
 export function codeChangesBySystem(config) {
+	/** @type {SystemChanges[]} */
 	const out = [];
 	for (const system of config.systems) {
 		if (!existsSync(system.path)) continue;
@@ -53,7 +84,11 @@ export function codeChangesBySystem(config) {
 	return out;
 }
 
-/** Changed markdown under docsDir or inbox/, relative to the KB root. */
+/**
+ * Changed markdown under docsDir or inbox/, relative to the KB root.
+ * @param {RaguConfig} config
+ * @returns {string[]}
+ */
 export function docChanges(config) {
 	const docsRel = relative(config.root, config.docsDir).replace(/\\/g, "/");
 	return gitChangedFiles(config.root).filter(
@@ -61,16 +96,22 @@ export function docChanges(config) {
 	);
 }
 
-/** Reads only the `sources:` list from a markdown file's frontmatter (no YAML dependency). */
+/**
+ * Reads only the `sources:` list from a markdown file's frontmatter (no YAML dependency).
+ * @param {string} markdown
+ * @returns {string[]}
+ */
 export function readSources(markdown) {
 	const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(markdown);
 	if (!fm) return [];
-	const lines = fm[1].split(/\r?\n/);
+	const lines = (fm[1] ?? "").split(/\r?\n/);
+	/** @type {string[]} */
 	const sources = [];
 	let inSources = false;
 	for (const line of lines) {
-		if (/^sources:\s*\[(.*)\]\s*$/.test(line)) {
-			const inline = /^sources:\s*\[(.*)\]\s*$/.exec(line)[1].trim();
+		const inlineList = /^sources:\s*\[(.*)\]\s*$/.exec(line);
+		if (inlineList) {
+			const inline = (inlineList[1] ?? "").trim();
 			if (inline) sources.push(...inline.split(",").map((s) => s.trim().replace(/^['"]|['"]$/g, "")));
 			inSources = false;
 			continue;
@@ -81,7 +122,7 @@ export function readSources(markdown) {
 		}
 		if (inSources) {
 			const item = /^\s+-\s+(.+?)\s*$/.exec(line);
-			if (item) sources.push(item[1].replace(/^['"]|['"]$/g, ""));
+			if (item) sources.push((item[1] ?? "").replace(/^['"]|['"]$/g, ""));
 			else if (!/^\s/.test(line)) inSources = false;
 		}
 	}
@@ -90,20 +131,24 @@ export function readSources(markdown) {
 
 /**
  * For every doc, checks whether any of its `sources:` points at a file that changed.
- * @param {ReturnType<typeof codeChangesBySystem>} changes
- * @returns {{ doc: string, hits: string[] }[]}
+ * @param {RaguConfig} config
+ * @param {SystemChanges[]} changes
+ * @param {(dir: string) => string[]} listDocs
+ * @returns {StaleDoc[]}
  */
 export function staleDocs(config, changes, listDocs) {
-	const changed = new Set();
-	for (const c of changes) for (const f of c.files) changed.add(`${c.systemId}/${f}`);
+	const changed = new Set(changes.flatMap((c) => c.files.map((f) => `${c.systemId}/${f}`)));
+	/** @type {StaleDoc[]} */
 	const result = [];
 	for (const docPath of listDocs(config.docsDir)) {
+		/** @type {string} */
 		let markdown;
 		try {
 			markdown = readFileSync(docPath, "utf-8");
 		} catch {
 			continue;
 		}
+		/** @type {string[]} */
 		const hits = [];
 		for (const src of readSources(markdown)) {
 			const r = resolveSource(src, config);

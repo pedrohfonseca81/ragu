@@ -9,14 +9,20 @@
   },
   "files": [
     "bin",
-    "src",
+    "dist",
     "README.md"
   ],
   "exports": {
-    ".": "./src/index.mjs"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "scripts": {
-    "test": "node --test \"test/**/*.test.mjs\""
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --experimental-strip-types --no-warnings=ExperimentalWarning --test \"test/**/*.test.ts\"",
+    "prepack": "npm run build"
   },
   "keywords": [
     "mcp",
@@ -38,5 +44,7 @@
   },
   "engines": {
     "node": ">=20"
-  }
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts"
 }

@@ -31,8 +31,15 @@ node packages/create-ragu/bin/create-ragu.mjs install                       # An
 
 `packages/create-ragu` packs a copy of `plugins/ragu` (`prepack` runs `scripts/sync-template.mjs`); in the monorepo it uses `../../plugins/ragu` directly.
 
+## TypeScript
+
+`packages/create-ragu` and `packages/ragu-mcp` are TypeScript (`src/*.ts`, strict, `tsconfig.base.json`); `tsc` emits `dist/`, which the bins import and npm publishes. Tests live next to them as `test/*.test.ts` and run straight from the sources with `node --experimental-strip-types`, so imports carry the `.ts` extension (`rewriteRelativeImportExtensions` turns them into `.js` in `dist/`) and the syntax stays erasable (`erasableSyntaxOnly`: no enums, no parameter properties).
+
+The Stop hook (`plugins/ragu/hooks`) and the template's scripts stay plain JavaScript on purpose: the harness runs the hook straight from the plugin checkout and users run `scripts/check.mjs` in their own project, neither with a build step. They carry `// @ts-check` and JSDoc types and are checked by the same `tsc` (`tsconfig.json` and `tsconfig.template.json` at the root). `npm run typecheck` covers all of it; CI runs it before the tests.
+
 ## Conventions
 
+- Types: follow the `typescript` skill in `.claude/skills/typescript`: inference for locals, explicit return types on exported functions, `unknown` plus type guards instead of `any` or `as`, `interface` for object contracts.
 - Docs and strings: no em dashes; a colon, a comma, a semicolon or parentheses instead.
 - Skill frontmatter: quote `description:` when it contains a colon (Antigravity parses strict YAML).
 - Nothing harness-specific goes into a user's repository. Per-user installs belong in the user's home.

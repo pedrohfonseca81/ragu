@@ -1,8 +1,51 @@
+// @ts-check
 // Loads and lightly validates ragu.config.json. Shared by every script in this project.
 import { readFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
-export const STATUSES = ["verified", "inferred", "unverified", "outdated"];
+/**
+ * @typedef {object} SystemSpec
+ * @property {string} id
+ * @property {string} path
+ *
+ * @typedef {object} Section
+ * @property {string} dir
+ * @property {string} label
+ *
+ * @typedef {object} HookConfig
+ * @property {string[]} codeExtensions
+ * @property {string[]} ignore
+ *
+ * @typedef {object} RemoteConfig
+ * @property {"cloudflare"} provider
+ * @property {string} url
+ * @property {string} [embeddingModel]
+ * @property {string} [vectorizeIndex]
+ * @property {boolean} [oauth]
+ *
+ * @typedef {object} RawConfig  ragu.config.json as written.
+ * @property {string} name
+ * @property {string} title
+ * @property {string} [docsDir]
+ * @property {SystemSpec[]} [systems]
+ * @property {Section[]} [sections]
+ * @property {string[]} [statuses]
+ * @property {Partial<HookConfig>} [hook]
+ * @property {RemoteConfig | null} [remote]
+ *
+ * @typedef {object} RaguConfig  The config with absolute paths and defaults applied.
+ * @property {string} root
+ * @property {string} name
+ * @property {string} title
+ * @property {string} docsDir
+ * @property {SystemSpec[]} systems
+ * @property {Section[]} sections
+ * @property {readonly string[]} statuses
+ * @property {HookConfig} hook
+ * @property {RemoteConfig | null} remote
+ */
+
+export const STATUSES = /** @type {const} */ (["verified", "inferred", "unverified", "outdated"]);
 
 export const DEFAULT_SECTIONS = [
 	{ dir: "systems", label: "Systems" },
@@ -18,7 +61,11 @@ export const DEFAULT_HOOK = {
 	ignore: ["node_modules", "dist", "_build", "deps", ".git", ".agents", ".agent", ".claude", ".gemini"],
 };
 
-/** Walks up from `start` until it finds a ragu.config.json. Returns the config file path or null. */
+/**
+ * Walks up from `start` until it finds a ragu.config.json. Returns the config file path or null.
+ * @param {string} start
+ * @returns {string | null}
+ */
 export function findConfigFile(start) {
 	let dir = resolve(start);
 	for (;;) {
@@ -30,8 +77,13 @@ export function findConfigFile(start) {
 	}
 }
 
-/** Reads a config file and fills in defaults. `root` is the directory containing it. */
+/**
+ * Reads a config file and fills in defaults. `root` is the directory containing it.
+ * @param {string} configPath
+ * @returns {RaguConfig}
+ */
 export function loadConfig(configPath) {
+	/** @type {RawConfig} */
 	const raw = JSON.parse(readFileSync(configPath, "utf-8"));
 	const root = dirname(resolve(configPath));
 	const errors = validateConfig(raw);
@@ -51,13 +103,20 @@ export function loadConfig(configPath) {
 	};
 }
 
-export function validateConfig(raw) {
+/**
+ * @param {unknown} input
+ * @returns {string[]}
+ */
+export function validateConfig(input) {
+	/** @type {string[]} */
 	const errors = [];
-	if (!raw || typeof raw !== "object") return ["config must be an object"];
+	if (!input || typeof input !== "object") return ["config must be an object"];
+	const raw = /** @type {Partial<RawConfig>} */ (input);
 	if (typeof raw.name !== "string" || !/^[a-z0-9][a-z0-9-]*$/.test(raw.name)) errors.push("`name` must be kebab-case");
 	if (typeof raw.title !== "string" || !raw.title) errors.push("`title` is required");
 	if (!Array.isArray(raw.systems)) errors.push("`systems` must be an array (may be empty)");
 	else {
+		/** @type {Set<string>} */
 		const ids = new Set();
 		for (const s of raw.systems) {
 			if (!s || typeof s.id !== "string" || typeof s.path !== "string") errors.push("each system needs `id` and `path`");
@@ -80,11 +139,21 @@ export function validateConfig(raw) {
 	return errors;
 }
 
-/** Resolves a `sources:` entry (`<system-id>/<path>[:line]`) against the config. */
+/**
+ * @typedef {{ ok: false, reason: string }} SourceError
+ * @typedef {{ ok: true, systemId: string, relPath: string, line: number | null, absPath: string, systemPath: string }} ResolvedSource
+ */
+
+/**
+ * Resolves a `sources:` entry (`<system-id>/<path>[:line]`) against the config.
+ * @param {string} entry
+ * @param {RaguConfig} config
+ * @returns {ResolvedSource | SourceError}
+ */
 export function resolveSource(entry, config) {
 	const m = /^([^/]+)\/(.+?)(?::(\d+)(?:-(\d+))?)?$/.exec(entry.trim());
 	if (!m) return { ok: false, reason: "expected <system-id>/<path>[:line]" };
-	const [, systemId, relPath, line] = m;
+	const [, systemId = "", relPath = "", line] = m;
 	const system = config.systems.find((s) => s.id === systemId);
 	if (!system) return { ok: false, reason: `unknown system "${systemId}"` };
 	return {

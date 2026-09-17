@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseSystems, scaffold, slugify } from "../src/scaffold.mjs";
+import { parseSystems, scaffold, slugify } from "../src/index.ts";
 
 test("slugify and parseSystems", () => {
 	assert.equal(slugify("Acme Knowledge Base"), "acme-knowledge-base");
@@ -21,7 +21,7 @@ test("scaffold with remote + example", () => {
 	try {
 		const { dest, notes } = scaffold({ dir: join(root, "kb"), name: "my-kb", title: "My KB", systems: [], remote: true, example: true });
 		assert.deepEqual(notes, []);
-		const config = JSON.parse(readFileSync(join(dest, "ragu.config.json"), "utf-8"));
+		const config = JSON.parse(readFileSync(join(dest, "ragu.config.json"), "utf-8")) as { name: string; remote: { vectorizeIndex: string }; systems: unknown };
 		assert.equal(config.name, "my-kb");
 		assert.equal(config.remote.vectorizeIndex, "my-kb-docs");
 		assert.deepEqual(config.systems, [{ id: "api", path: "../api" }, { id: "web", path: "../web" }]);
@@ -40,9 +40,9 @@ test("scaffold without remote and without example", () => {
 	const root = mkdtempSync(join(tmpdir(), "create-ragu-"));
 	try {
 		const { dest } = scaffold({ dir: join(root, "kb"), name: "local-kb", title: "Local", systems: [], remote: false, example: false });
-		const config = JSON.parse(readFileSync(join(dest, "ragu.config.json"), "utf-8"));
+		const config = JSON.parse(readFileSync(join(dest, "ragu.config.json"), "utf-8")) as { remote?: unknown };
 		assert.equal(config.remote, undefined);
-		const pkg = JSON.parse(readFileSync(join(dest, "package.json"), "utf-8"));
+		const pkg = JSON.parse(readFileSync(join(dest, "package.json"), "utf-8")) as { dependencies: Record<string, string>; devDependencies: Record<string, string>; scripts: Record<string, string> };
 		assert.equal(pkg.dependencies.agents, undefined);
 		assert.equal(pkg.devDependencies.wrangler, undefined);
 		assert.equal(pkg.scripts.deploy, undefined);

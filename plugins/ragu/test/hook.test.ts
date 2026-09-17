@@ -11,13 +11,13 @@ import { loadConfig, resolveSource, findConfigFile, findConfigFor, forWorkingTre
 const here = dirname(fileURLToPath(import.meta.url));
 const HOOK = join(here, "..", "hooks", "enforce.mjs");
 
-function git(cwd, ...args) {
+function git(cwd: string, ...args: string[]): string {
 	const r = spawnSync("git", args, { cwd, encoding: "utf-8" });
 	if (r.status !== 0) throw new Error(`git ${args.join(" ")} failed: ${r.stderr}`);
 	return r.stdout;
 }
 
-function initRepo(dir) {
+function initRepo(dir: string): void {
 	mkdirSync(dir, { recursive: true });
 	git(dir, "init", "-q");
 	git(dir, "config", "user.email", "t@t");
@@ -25,13 +25,13 @@ function initRepo(dir) {
 	git(dir, "config", "commit.gpgsign", "false");
 }
 
-function commitAll(dir) {
+function commitAll(dir: string): void {
 	git(dir, "add", "-A");
 	git(dir, "commit", "-q", "-m", "init", "--allow-empty");
 }
 
 /** Builds  <tmp>/kb (with ragu.config.json + docs) and <tmp>/api (a code repo). */
-function makeWorkspace() {
+function makeWorkspace(): { root: string; kb: string; api: string } {
 	const root = mkdtempSync(join(tmpdir(), "ragu-test-"));
 	const kb = join(root, "kb");
 	const api = join(root, "api");
@@ -59,7 +59,7 @@ function makeWorkspace() {
 
 // The hook remembers which sessions it already warned in <tmpdir>/ragu-hook/. Point it at a
 // directory owned by this run so tests neither see locks from earlier runs nor leave any behind.
-let lockRoot;
+let lockRoot: string;
 before(() => {
 	lockRoot = mkdtempSync(join(tmpdir(), "ragu-hook-test-"));
 });
@@ -67,17 +67,23 @@ after(() => {
 	rmSync(lockRoot, { recursive: true, force: true });
 });
 
-function runHook(input, env = {}) {
+interface HookResponse {
+	decision?: string;
+	reason?: string;
+	systemMessage?: string;
+}
+
+function runHook(input: Record<string, unknown>, env: Record<string, string> = {}): HookResponse {
 	const r = spawnSync(process.execPath, [HOOK], {
 		input: JSON.stringify(input),
 		encoding: "utf-8",
 		env: { ...process.env, TMPDIR: lockRoot, TMP: lockRoot, TEMP: lockRoot, ...env },
 	});
 	assert.equal(r.status, 0, r.stderr);
-	return JSON.parse(r.stdout || "{}");
+	return JSON.parse(r.stdout || "{}") as HookResponse;
 }
 
-let ws;
+let ws: ReturnType<typeof makeWorkspace>;
 beforeEach(() => {
 	ws = makeWorkspace();
 });
@@ -107,6 +113,7 @@ test("readSources parses block and inline lists", () => {
 test("resolveSource maps system ids to configured paths", () => {
 	const config = loadConfig(join(ws.kb, "ragu.config.json"));
 	const r = resolveSource("api/src/refund.ts:10", config);
+	assert.ok(r);
 	assert.equal(r.systemId, "api");
 	assert.equal(r.relPath, "src/refund.ts");
 	assert.equal(r.line, 10);
@@ -149,11 +156,11 @@ test("hook: code changed, docs not → blocks once with stale list, then allows"
 	const session = `s-${Date.now()}`;
 	const first = runHook({ session_id: session, cwd: ws.api });
 	assert.equal(first.decision, "block");
-	assert.match(first.reason, /domain\/refunds\.md \(sources: api\/src\/refund\.ts:10\)/);
-	assert.match(first.reason, /- api: src\/refund\.ts/);
+	assert.match(first.reason ?? "", /domain\/refunds\.md \(sources: api\/src\/refund\.ts:10\)/);
+	assert.match(first.reason ?? "", /- api: src\/refund\.ts/);
 	const second = runHook({ session_id: session, cwd: ws.api });
 	assert.equal(second.decision, undefined);
-	assert.match(second.systemMessage, /already issued/);
+	assert.match(second.systemMessage ?? "", /already issued/);
 });
 
 test("hook: stop_hook_active short-circuits", () => {
@@ -166,7 +173,7 @@ test("hook: unrelated code change → blocks with 'none' stale list", () => {
 	writeFileSync(join(ws.api, "src", "unrelated.ts"), "changed\n");
 	const out = runHook({ session_id: `s-${Date.now()}`, cwd: ws.kb });
 	assert.equal(out.decision, "block");
-	assert.match(out.reason, /none: no document cites/);
+	assert.match(out.reason ?? "", /none: no document cites/);
 });
 
 test("hook: code and docs changed → runs check and allows when it passes", () => {
@@ -174,7 +181,7 @@ test("hook: code and docs changed → runs check and allows when it passes", () 
 	writeFileSync(join(ws.kb, "src", "content", "docs", "domain", "refunds.md"), readFileSync(join(ws.kb, "src", "content", "docs", "domain", "refunds.md"), "utf-8") + "\nmore\n");
 	const out = runHook({ session_id: `s-${Date.now()}`, cwd: ws.api });
 	assert.equal(out.decision, undefined);
-	assert.match(out.systemMessage, /validated/);
+	assert.match(out.systemMessage ?? "", /validated/);
 });
 
 test("hook: code and docs changed → blocks when check fails", () => {
@@ -182,12 +189,12 @@ test("hook: code and docs changed → blocks when check fails", () => {
 	writeFileSync(join(ws.kb, "inbox", "QUESTIONS.md"), "# q\n");
 	const out = runHook({ session_id: `s-${Date.now()}`, cwd: ws.api }, { RAGU_TEST_CHECK_FAIL: "1" });
 	assert.equal(out.decision, "block");
-	assert.match(out.reason, /check\.mjs` failed/);
+	assert.match(out.reason ?? "", /check\.mjs` failed/);
 });
 
 // ---- Antigravity payload ------------------------------------------------------------------
 
-function agyInput(cwd, conversationId = `c-${Date.now()}-${Math.random()}`, extra = {}) {
+function agyInput(cwd: string, conversationId = `c-${Date.now()}-${Math.random()}`, extra: Record<string, unknown> = {}) {
 	return { conversationId, workspacePaths: [cwd], executionNum: 1, terminationReason: "model_stop", fullyIdle: true, ...extra };
 }
 
@@ -212,10 +219,10 @@ test("hook (antigravity): code changed, docs not → continue once, then allow",
 	const id = `c-${Date.now()}`;
 	const first = runHook(agyInput(ws.api, id));
 	assert.equal(first.decision, "continue");
-	assert.match(first.reason, /domain\/refunds\.md/);
+	assert.match(first.reason ?? "", /domain\/refunds\.md/);
 	const second = runHook(agyInput(ws.api, id));
 	assert.equal(second.decision, "allow");
-	assert.match(second.reason, /already issued/);
+	assert.match(second.reason ?? "", /already issued/);
 });
 
 test("hook (antigravity): failing check → continue once per conversation, then allow", () => {
@@ -224,10 +231,10 @@ test("hook (antigravity): failing check → continue once per conversation, then
 	const id = `c-${Date.now()}`;
 	const first = runHook(agyInput(ws.api, id), { RAGU_TEST_CHECK_FAIL: "1" });
 	assert.equal(first.decision, "continue");
-	assert.match(first.reason, /check\.mjs` failed/);
+	assert.match(first.reason ?? "", /check\.mjs` failed/);
 	const second = runHook(agyInput(ws.api, id), { RAGU_TEST_CHECK_FAIL: "1" });
 	assert.equal(second.decision, "allow");
-	assert.match(second.reason, /still fails/);
+	assert.match(second.reason ?? "", /still fails/);
 });
 
 test("hook (antigravity): no changes → {}", () => {
@@ -280,8 +287,8 @@ test("monorepo: the repo root (workspace) is governed by the kb it contains", ()
 		writeFileSync(join(m.api, "src", "refund.ts"), "changed\n");
 		const out = runHook(agyInput(m.root));
 		assert.equal(out.decision, "continue");
-		assert.match(out.reason, /- api: src\/refund\.ts/);
-		assert.match(out.reason, /domain\/refunds\.md \(sources: api\/src\/refund\.ts:10\)/);
+		assert.match(out.reason ?? "", /- api: src\/refund\.ts/);
+		assert.match(out.reason ?? "", /domain\/refunds\.md \(sources: api\/src\/refund\.ts:10\)/);
 	} finally {
 		rmSync(m.root, { recursive: true, force: true });
 	}
@@ -293,7 +300,7 @@ test("sibling layout: the workspace holding the kb and its systems is governed b
 	writeFileSync(join(ws.api, "src", "refund.ts"), "changed\n");
 	const out = runHook({ cwd: ws.root, session_id: "sib-1" });
 	assert.equal(out.decision, "block");
-	assert.match(out.reason, /- api: src\/refund\.ts/);
+	assert.match(out.reason ?? "", /- api: src\/refund\.ts/);
 });
 
 test("a directory that contains a kb whose systems live elsewhere is not governed by it", () => {
@@ -310,7 +317,7 @@ test("a directory that contains a kb whose systems live elsewhere is not governe
 });
 
 /** Adds a linked worktree of `repo` at <repo>/.claude/worktrees/<name> (the Claude Code layout). */
-function addWorktree(repo, name) {
+function addWorktree(repo: string, name: string): string {
 	const dir = join(repo, ".claude", "worktrees", name);
 	mkdirSync(dirname(dir), { recursive: true });
 	git(repo, "worktree", "add", "-q", "-b", name, dir);
@@ -329,11 +336,11 @@ test("worktree: a linked worktree of a system is governed by the kb, even outsid
 test("worktree: forWorkingTree points the system at the worktree being edited", () => {
 	const wt = addWorktree(ws.api, "feat");
 	const config = loadConfig(join(ws.kb, "ragu.config.json"));
-	assert.equal(forWorkingTree(config, join(wt, "src")).systems[0].path, wt);
+	assert.equal(forWorkingTree(config, join(wt, "src")).systems[0]?.path, wt);
 	// unrelated cwd (main tree, the kb, a foreign repo) leaves the paths alone
-	assert.equal(forWorkingTree(config, ws.api).systems[0].path, ws.api);
-	assert.equal(forWorkingTree(config, ws.kb).systems[0].path, ws.api);
-	assert.equal(forWorkingTree(config, ws.root).systems[0].path, ws.api);
+	assert.equal(forWorkingTree(config, ws.api).systems[0]?.path, ws.api);
+	assert.equal(forWorkingTree(config, ws.kb).systems[0]?.path, ws.api);
+	assert.equal(forWorkingTree(config, ws.root).systems[0]?.path, ws.api);
 });
 
 test("worktree: the hook sees changes made in the worktree, not in the main tree", () => {
@@ -341,8 +348,8 @@ test("worktree: the hook sees changes made in the worktree, not in the main tree
 	writeFileSync(join(wt, "src", "refund.ts"), "changed in worktree\n");
 	const out = runHook({ cwd: wt, session_id: "wt-1" });
 	assert.equal(out.decision, "block");
-	assert.match(out.reason, /- api: src\/refund\.ts/);
-	assert.match(out.reason, /domain\/refunds\.md \(sources: api\/src\/refund\.ts:10\)/);
+	assert.match(out.reason ?? "", /- api: src\/refund\.ts/);
+	assert.match(out.reason ?? "", /domain\/refunds\.md \(sources: api\/src\/refund\.ts:10\)/);
 	// the main tree is clean: from there nothing is reported
 	assert.deepEqual(runHook({ cwd: ws.api, session_id: "wt-2" }), {});
 });
@@ -351,9 +358,9 @@ test("worktree: a config read from a linked worktree of the kb still resolves it
 	const kbWt = addWorktree(ws.kb, "docs-feat");
 	const config = loadConfig(join(kbWt, "ragu.config.json"));
 	assert.equal(config.root, kbWt);
-	assert.equal(config.systems[0].path, ws.api);
+	assert.equal(config.systems[0]?.path, ws.api);
 	writeFileSync(join(ws.api, "src", "refund.ts"), "changed\n");
 	const out = runHook({ cwd: kbWt, session_id: "kbwt-1" });
 	assert.equal(out.decision, "block");
-	assert.match(out.reason, /- api: src\/refund\.ts/);
+	assert.match(out.reason ?? "", /- api: src\/refund\.ts/);
 });

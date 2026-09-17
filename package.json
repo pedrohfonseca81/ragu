@@ -7,12 +7,19 @@
     "template"
   ],
   "scripts": {
-    "test": "npm run test --workspaces --if-present && node --test \"plugins/ragu/test/**/*.test.mjs\"",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.template.json && npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present && node --experimental-strip-types --no-warnings=ExperimentalWarning --test \"plugins/ragu/test/**/*.test.ts\"",
     "check:template": "npm run check --workspace template",
     "build:template": "npm run build --workspace template",
-    "check:i18n": "node scripts/check-readme-i18n.mjs"
+    "check:i18n": "node scripts/check-readme-i18n.mjs",
+    "prepare": "npm run build"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.3",
+    "typescript": "^5.9.3"
   }
 }

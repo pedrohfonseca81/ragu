@@ -9,14 +9,16 @@
   },
   "files": [
     "bin",
-    "src",
+    "dist",
     "template",
     "plugin",
     "README.md"
   ],
   "scripts": {
-    "prepack": "node scripts/sync-template.mjs",
-    "test": "node --test \"test/**/*.test.mjs\""
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --experimental-strip-types --no-warnings=ExperimentalWarning --test \"test/**/*.test.ts\"",
+    "prepack": "npm run build && node scripts/sync-template.mjs"
   },
   "keywords": [
     "create",

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 // Fast validation of the knowledge base (< 2s, no Astro):
 //   - frontmatter matches the shared schema (same one the site uses)
 //   - relative markdown links point to existing files
@@ -15,13 +16,28 @@ import { findConfigFile, loadConfig, resolveSource } from "./lib/config.mjs";
 import { frontmatterFields } from "./lib/frontmatter.mjs";
 import { walkMarkdown } from "./lib/walk.mjs";
 
+/**
+ * @typedef {object} CheckResult
+ * @property {string[]} errors
+ * @property {string[]} warnings
+ * @property {number} fileCount
+ * @property {import("./lib/config.mjs").RaguConfig} config
+ */
+
+/**
+ * @param {string} configPath
+ * @returns {CheckResult}
+ */
 export function runCheck(configPath) {
 	const config = loadConfig(configPath);
 	const schema = z.object({ title: z.string().min(1), ...frontmatterFields(z, config) }).passthrough();
+	/** @type {string[]} */
 	const errors = [];
+	/** @type {string[]} */
 	const warnings = [];
 	const files = walkMarkdown(config.docsDir);
 	const known = new Set(files.map((f) => relative(config.docsDir, f)));
+	/** @type {Map<string, string>} */
 	const adrNumbers = new Map();
 	const missingSystemDirs = new Set(config.systems.filter((s) => !existsSync(s.path)).map((s) => s.id));
 
@@ -31,7 +47,7 @@ export function runCheck(configPath) {
 		try {
 			parsed = matter(readFileSync(file, "utf-8"));
 		} catch (e) {
-			errors.push(`${rel}: cannot parse frontmatter (${e.message})`);
+			errors.push(`${rel}: cannot parse frontmatter (${e instanceof Error ? e.message : String(e)})`);
 			continue;
 		}
 		const result = schema.safeParse(parsed.data);
@@ -68,29 +84,34 @@ export function runCheck(configPath) {
 
 		// ADR numbering
 		if (rel.startsWith("decisions/") && rel !== "decisions/index.md") {
-			const m = /^decisions\/(\d{4})-[a-z0-9-]+\.md$/.exec(rel);
-			if (!m) errors.push(`${rel}: decisions must be named NNNN-slug.md`);
-			else if (adrNumbers.has(m[1])) errors.push(`${rel}: ADR number ${m[1]} already used by ${adrNumbers.get(m[1])}`);
-			else adrNumbers.set(m[1], rel);
+			const number = /^decisions\/(\d{4})-[a-z0-9-]+\.md$/.exec(rel)?.[1];
+			if (number === undefined) errors.push(`${rel}: decisions must be named NNNN-slug.md`);
+			else if (adrNumbers.has(number)) errors.push(`${rel}: ADR number ${number} already used by ${adrNumbers.get(number)}`);
+			else adrNumbers.set(number, rel);
 		}
 	}
 
 	for (const id of missingSystemDirs) {
 		const sys = config.systems.find((s) => s.id === id);
-		warnings.push(`system "${id}" not found at ${sys.path}; sources for it were not verified`);
+		warnings.push(`system "${id}" not found at ${sys?.path}; sources for it were not verified`);
 	}
 
 	return { errors, warnings, fileCount: files.length, config };
 }
 
-/** Relative `.md` links only; ignores http(s), anchors, and absolute site paths. */
+/**
+ * Relative `.md` links only; ignores http(s), anchors, and absolute site paths.
+ * @param {string} markdown
+ * @returns {string[]}
+ */
 export function extractRelativeLinks(markdown) {
+	/** @type {string[]} */
 	const links = [];
 	const withoutCode = markdown.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
 	const re = /\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
 	let m;
 	while ((m = re.exec(withoutCode))) {
-		const href = m[1].split("#")[0];
+		const href = (m[1] ?? "").split("#")[0];
 		if (!href || /^[a-z]+:/i.test(href) || href.startsWith("/")) continue;
 		if (!href.endsWith(".md")) continue;
 		links.push(href);

@@ -1,3 +1,4 @@
+// @ts-check
 // Copies ../../template into ./template and ../../plugins/ragu into ./plugin before
 // `npm pack`/`npm publish`, so the published package is self-contained. `.gitignore` becomes `_gitignore` (npm strips dotfiles named .gitignore).
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
@@ -9,6 +10,10 @@ const src = resolve(here, "..", "..", "..", "template");
 const dest = resolve(here, "..", "template");
 const SKIP = new Set(["node_modules", "dist", ".astro", ".wrangler", "package-lock.json"]);
 
+/**
+ * @param {string} from
+ * @param {string} to
+ */
 function copy(from, to) {
 	mkdirSync(to, { recursive: true });
 	for (const entry of readdirSync(from)) {

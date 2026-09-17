@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 // Reports README translations that were made from an older README.md.
 // Each translation starts with `<!-- source: README.md@<hash> -->`, where <hash> is the first 12 hex
 // characters of the sha256 of README.md at the time of translation. Exit code 1 when any is stale or
@@ -12,12 +13,14 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const readme = join(root, "README.md");
 const dir = join(root, "docs", "readme");
 
+/** @param {string} [text] */
 export function sourceHash(text = readFileSync(readme, "utf-8")) {
 	return createHash("sha256").update(text).digest("hex").slice(0, 12);
 }
 
 export function check() {
 	const current = sourceHash();
+	/** @type {{ file: string, hash: string | null, stale: boolean }[]} */
 	const results = [];
 	if (!existsSync(dir)) return { current, results };
 	for (const file of readdirSync(dir).filter((f) => /^README\.[A-Za-z-]+\.md$/.test(f)).sort()) {
