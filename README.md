@@ -5,8 +5,7 @@
 <p align="center"><strong>A knowledge base that stays true to your code, and that your agents can actually use.</strong></p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/create-ragu"><img alt="create-ragu on npm" src="https://img.shields.io/npm/v/create-ragu?label=create-ragu&color=c0392b"></a>
-  <a href="https://www.npmjs.com/package/ragu-mcp"><img alt="ragu-mcp on npm" src="https://img.shields.io/npm/v/ragu-mcp?label=ragu-mcp&color=c0392b"></a>
+  <a href="https://www.npmjs.com/package/create-ragu"><img alt="npm" src="https://img.shields.io/npm/v/create-ragu?label=npm&color=c0392b"></a>
   <a href="https://github.com/pedrohfonseca81/ragu/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/pedrohfonseca81/ragu/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-cream"></a>
 </p>

@@ -1,4 +1,4 @@
-<!-- source: README.md@6502891e6e50 -->
+<!-- source: README.md@c4a6e00f8d37 -->
 <p align="center">
   <img src="../../assets/ragu-banner.png" alt="Ragu" width="720">
 </p>
@@ -6,8 +6,7 @@
 <p align="center"><strong>Uma base de conhecimento que se mantém fiel ao seu código, e que seus agentes conseguem usar de verdade.</strong></p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/create-ragu"><img alt="create-ragu on npm" src="https://img.shields.io/npm/v/create-ragu?label=create-ragu&color=c0392b"></a>
-  <a href="https://www.npmjs.com/package/ragu-mcp"><img alt="ragu-mcp on npm" src="https://img.shields.io/npm/v/ragu-mcp?label=ragu-mcp&color=c0392b"></a>
+  <a href="https://www.npmjs.com/package/create-ragu"><img alt="npm" src="https://img.shields.io/npm/v/create-ragu?label=npm&color=c0392b"></a>
   <a href="https://github.com/pedrohfonseca81/ragu/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/pedrohfonseca81/ragu/actions/workflows/ci.yml/badge.svg"></a>
   <a href="../../LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-cream"></a>
 </p>
