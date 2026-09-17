@@ -1,4 +1,4 @@
-import { test, beforeEach, afterEach } from "node:test";
+import { test, before, after, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -57,11 +57,21 @@ function makeWorkspace() {
 	return { root, kb, api };
 }
 
+// The hook remembers which sessions it already warned in <tmpdir>/ragu-hook/. Point it at a
+// directory owned by this run so tests neither see locks from earlier runs nor leave any behind.
+let lockRoot;
+before(() => {
+	lockRoot = mkdtempSync(join(tmpdir(), "ragu-hook-test-"));
+});
+after(() => {
+	rmSync(lockRoot, { recursive: true, force: true });
+});
+
 function runHook(input, env = {}) {
 	const r = spawnSync(process.execPath, [HOOK], {
 		input: JSON.stringify(input),
 		encoding: "utf-8",
-		env: { ...process.env, ...env },
+		env: { ...process.env, TMPDIR: lockRoot, TMP: lockRoot, TEMP: lockRoot, ...env },
 	});
 	assert.equal(r.status, 0, r.stderr);
 	return JSON.parse(r.stdout || "{}");
