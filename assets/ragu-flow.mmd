@@ -1,14 +1,13 @@
 flowchart LR
     repos["<b>your code repos</b><br/>api/ · web/ · worker/"]
-    agent["<b>your agent</b> + ragu plugin<br/><i>Claude Code · Antigravity · any MCP client</i>"]
-    mcp["ragu-mcp<br/><i>stdio or Cloudflare</i>"]
+    agent["<b>your agent</b> + ragu plugin<br/>Stop hook · ragu-sync · ragu-init<br/>ragu-adr · ragu-audit"]
     kb["<b>knowledge base</b><br/>markdown + ragu.config.json<br/><i>check.mjs: frontmatter, links, sources</i>"]
     out["Starlight site<br/>Obsidian vault<br/>llms.txt"]
 
     repos -- "git status" --> agent
-    agent -- "Stop hook · ragu-sync · ragu-init<br/>ragu-adr · ragu-audit" --> kb
-    agent -- "search_docs · get_document<br/>list_documents" --> mcp --> kb
-    kb -. "sources: api/src/billing/refund.ts:42" .-> repos
+    agent -- "writes" --> kb
+    agent -- "reads over ragu-mcp" --> kb
+    kb -. "sources: refund.ts:42" .-> repos
     kb -- "build" --> out
 
     classDef code fill:#fdf6ec,stroke:#c0392b,stroke-width:1.5px,color:#2b2b2b
@@ -16,4 +15,4 @@ flowchart LR
     classDef soft fill:#ffffff,stroke:#8a6d5a,stroke-width:1px,color:#2b2b2b,stroke-dasharray:4 3
     class repos,agent code
     class kb kbox
-    class mcp,out soft
+    class out soft
