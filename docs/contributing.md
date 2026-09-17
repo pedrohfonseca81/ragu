@@ -38,6 +38,18 @@ node packages/create-ragu/bin/create-ragu.mjs install                       # An
 - Nothing harness-specific goes into a user's repository. Per-user installs belong in the user's home.
 - The hook's two dialects are tested end to end in `plugins/ragu/test/hook.test.mjs`; add a case when you add a harness ([hook.md](hook.md#adding-a-harness)).
 
+## Translations
+
+The README exists in six languages under `docs/readme/` (`README.<bcp47>.md`: `zh-CN`, `ja`, `ko`, `es`, `fr`, `pt-BR`). English is the reference; everything else (`docs/`, `AGENT-SETUP.md`, package READMEs) stays in English.
+
+Each translation starts with `<!-- source: README.md@<hash> -->`, the first 12 hex characters of the sha256 of the `README.md` it was made from. `npm run check:i18n` lists the ones made from an older README; CI runs it as an advisory job that never blocks. When you change `README.md`:
+
+1. `node scripts/check-readme-i18n.mjs --hash` prints the new hash.
+2. Ask your agent to retranslate the stale files from the English README, keeping the same structure and these parts in English: code blocks, commands, file names, frontmatter keys, skill and tool names, the ASCII diagram, and the harness names in the table. Links to `docs/` point at the English pages (`../agents.md`), the banner and the license at `../../assets/...` and `../../LICENSE`.
+3. Set the marker to the new hash and run `npm run check:i18n`.
+
+Every translation carries a language switcher below the badges (`English` first) and a one-line notice that the English README is the reference. `pt-BR` is reviewed by a native speaker; the others say they are AI-generated.
+
 ## Roadmap
 
 Open issues labelled [`roadmap`](https://github.com/pedrohfonseca81/ragu/issues?q=is%3Aissue+is%3Aopen+label%3Aroadmap). Contributions welcome. MIT.

@@ -9,7 +9,6 @@ Ragu reaches an agent in three ways: a **Stop hook** that blocks it from finishi
 | Codex CLI | ❌ Not supported |
 | OpenCode | ❌ Not supported |
 | Cursor | ❌ Not supported |
-| Gemini CLI | ❌ Not supported |
 | GitHub Copilot | ❌ Not supported |
 | Windsurf | ❌ Not supported |
 | Cline | ❌ Not supported |

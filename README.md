@@ -11,6 +11,8 @@
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-cream"></a>
 </p>
 
+<p align="center"><sub><a href="docs/readme/README.zh-CN.md">中文</a> · <a href="docs/readme/README.ja.md">日本語</a> · <a href="docs/readme/README.ko.md">한국어</a> · <a href="docs/readme/README.es.md">Español</a> · <a href="docs/readme/README.fr.md">Français</a> · <a href="docs/readme/README.pt-BR.md">Português</a></sub></p>
+
 Ragu gives you a markdown knowledge base for business rules, flows, integrations and decisions, with three things most doc setups lack:
 
 1. **Every page cites the code it describes** (`sources: api/src/billing/refund.ts:42`), and the build fails when a citation or a link breaks.
@@ -83,7 +85,6 @@ Systems: api (./api), web (./web). Knowledge base at ./knowledge-base.
 | Codex CLI | ❌ Not supported |
 | OpenCode | ❌ Not supported |
 | Cursor | ❌ Not supported |
-| Gemini CLI | ❌ Not supported |
 | GitHub Copilot | ❌ Not supported |
 | Windsurf | ❌ Not supported |
 | Cline | ❌ Not supported |

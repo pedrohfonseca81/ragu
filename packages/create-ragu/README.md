@@ -32,7 +32,6 @@ npx create-ragu install [system-id ...] [--config <path>] [--force]
 | Codex CLI | ❌ Not supported |
 | OpenCode | ❌ Not supported |
 | Cursor | ❌ Not supported |
-| Gemini CLI | ❌ Not supported |
 | GitHub Copilot | ❌ Not supported |
 | Windsurf | ❌ Not supported |
 | Cline | ❌ Not supported |
