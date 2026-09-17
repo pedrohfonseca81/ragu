@@ -57,6 +57,12 @@ The generated `AGENTS.md` in the knowledge base is the contract; `CLAUDE.md` inc
 - **Code defines the truth.** When a page disagrees with the code, the page is `outdated` and the divergence goes to `inbox/DIVERGENCES.md`; a human decides which one is right.
 - **Never invent the why.** If the motivation is not in code or an ADR, write `Reason not documented` and log a question in `inbox/QUESTIONS.md`.
 
+## Granularity
+
+A page is the set of rules that change together and live in one module of the code: billing as "commission, discount and split" is one page; billing as "everything money-related" is three or four. Not one page per rule (fragments with no narrative) and not one page per domain (a wall). Split when the body passes ~8 KB, `sources:` cites more than ~8 files or files from several modules, or the page holds more than one state machine.
+
+The thresholds are not aesthetic. Search embeds and returns whole pages, so a page that mixes topics is found less precisely and costs more context per hit; and the Stop hook flags a page stale whenever any of its `sources` changes, so a page citing fifteen files is re-read for changes that concern one of its sections. `npm run check` warns on both thresholds for `domain/`, `flows/` and `integrations/` pages (`systems/` and `decisions/` are one page per repository or decision by design).
+
 ## Validation
 
-`npm run check` runs in under two seconds: frontmatter schema, relative links, `sources` that point at existing files, unique ADR numbers. It is what the Stop hook runs. `npm run build` adds the Astro build with Starlight's link validator and Mermaid rendering; run it in CI.
+`npm run check` runs in under two seconds: frontmatter schema, relative links, `sources` that point at existing files, unique ADR numbers, and the granularity warnings above. It is what the Stop hook runs. `npm run build` adds the Astro build with Starlight's link validator and Mermaid rendering; run it in CI.

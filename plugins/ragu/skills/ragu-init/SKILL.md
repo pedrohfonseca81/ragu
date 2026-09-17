@@ -36,6 +36,8 @@ Write all of it to `inbox/init-<system-id>.md` in the knowledge base, structured
 ## Proposed pages             (path → one-line purpose)
 ```
 
+Group the domain candidates into pages by the granularity rule in the knowledge base's `AGENTS.md`: one page per cluster of rules that change together and live in one module. A domain with several such clusters (e.g. billing: split, subscriptions, refunds) gets several pages named `<domain>-<cluster>.md`; a domain with one gets one. Never propose a single page per domain that would cite every file in it.
+
 Then **stop and ask** the user to review the "Proposed pages" list: which to create, which to merge or drop, and answers to any blocking questions. Use `AskUserQuestion` if available; otherwise ask in plain text and wait.
 
 ## Phase 2: write the pages (after confirmation)
@@ -52,7 +54,7 @@ Create, in this order:
 
 1. `systems/<system-id>.md` from `templates/system.md`.
 2. Glossary entries in `glossary.md` (business term → code identifier → page link). Append; do not rewrite existing rows.
-3. `domain/*.md` for each confirmed rule (one concept per page) from `templates/rule.md`.
+3. `domain/*.md` for each confirmed page from `templates/rule.md`, keeping the granularity agreed in Phase 1.
 4. `flows/*.md` for confirmed flows from `templates/flow.md` (Mermaid sequence diagrams; label unverified steps "unknown").
 5. `integrations/*.md` for third parties.
 6. `decisions/NNNN-*.md` only for decisions that already exist in the repo (import them, next free number); never invent ADRs.
@@ -66,4 +68,4 @@ Run `npx create-ragu install <system-id>` from the knowledge base. It writes, in
 
 ## Validate and report
 
-Run `npm run check` in the knowledge base and fix all errors. Report the pages created with their status, the questions left in `inbox/QUESTIONS.md`, and the files written in the system's repository.
+Run `npm run check` in the knowledge base and fix all errors. Treat its page-size and sources warnings as a request to split: these pages are already too broad to be found precisely or kept in sync cheaply. Report the pages created with their status, the questions left in `inbox/QUESTIONS.md`, and the files written in the system's repository.

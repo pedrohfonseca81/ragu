@@ -40,10 +40,11 @@ For each affected page:
 - Never invent motivation. If the "why" is not in code or an ADR, write `Reason not documented` and add the question to `inbox/QUESTIONS.md` with the source that raised it.
 - Use relative markdown links (`../domain/page.md`), never wikilinks.
 - Keep the glossary in sync when a business term or its code name changed.
+- Respect the granularity rule in `AGENTS.md`: if the change belongs to a different cluster or module than the page's existing rules, or the page would pass ~8 KB / ~8 sources, create a sibling page instead of growing this one and link them both ways.
 
 ## 4. Validate
 
-Run `npm run check` in the knowledge base root. Fix every error. Warnings about systems not found on disk are fine.
+Run `npm run check` in the knowledge base root. Fix every error. Warnings about systems not found on disk are fine; a page-size or sources warning on a page you touched means split it now (see `AGENTS.md`, *Page granularity*), and on a page you did not touch means mention it in the report.
 
 ## 5. Report
 

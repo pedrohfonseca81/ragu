@@ -5,6 +5,7 @@
 //   - relative markdown links point to existing files
 //   - `sources:` entries resolve to a known system and an existing file
 //   - `decisions/` files follow NNNN-slug.md and numbers are unique
+//   - (warning) a domain/flow/integration page is not too broad: body over MAX_BODY_CHARS or more than MAX_SOURCES sources
 //
 // Usage: node scripts/check.mjs [--json]
 // Exit code 1 on any error. Warnings never fail the run.
@@ -15,6 +16,13 @@ import { z } from "zod";
 import { findConfigFile, loadConfig, resolveSource } from "./lib/config.mjs";
 import { frontmatterFields } from "./lib/frontmatter.mjs";
 import { walkMarkdown } from "./lib/walk.mjs";
+
+// Granularity thresholds (see AGENTS.md, "Page granularity"). Search embeds and returns whole pages and the
+// hook flags a page stale on any source change, so a broad page is found less precisely and re-read more often.
+// Exempt: root pages (index.md, glossary.md) are aggregates by design, `systems/` is one page per repository
+// and `decisions/` is one record per decision; neither is fixed by splitting.
+const MAX_BODY_CHARS = 8000;
+const MAX_SOURCES = 8;
 
 /**
  * @typedef {object} CheckResult
@@ -60,6 +68,17 @@ export function runCheck(configPath) {
 		const fm = result.data;
 		if (fm.human_reviewed === true && fm.status === "outdated") {
 			warnings.push(`${rel}: human_reviewed is true but status is outdated`);
+		}
+
+		// granularity
+		if (rel.includes("/") && !rel.startsWith("systems/") && !rel.startsWith("decisions/")) {
+			const bodyChars = parsed.content.trim().length;
+			if (bodyChars > MAX_BODY_CHARS) {
+				warnings.push(`${rel}: body is ${(bodyChars / 1000).toFixed(1)} KB (over ${MAX_BODY_CHARS / 1000} KB); consider splitting the page`);
+			}
+			if (fm.sources.length > MAX_SOURCES) {
+				warnings.push(`${rel}: cites ${fm.sources.length} sources (over ${MAX_SOURCES}); consider splitting the page`);
+			}
 		}
 
 		// sources
