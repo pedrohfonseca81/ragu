@@ -4,7 +4,7 @@ You are reading this because a person asked you to set up [Ragu](https://github.
 
 Follow the steps below in order. Run the commands yourself; ask the person only what is listed under **Ask**. Report what you did at the end using the checklist in [Report](#report).
 
-Requirements: Node ≥ 20 and git on `PATH`. Claude Code or Antigravity (IDE or `agy` CLI) as the agent runtime.
+Requirements: Node ≥ 20 and git on `PATH`. Claude Code or Antigravity (IDE or `agy` CLI) as the agent runtime; other MCP clients get the knowledge base but not the hook or the skills (see `docs/agents.md`).
 
 ## 0. Decide the scenario
 

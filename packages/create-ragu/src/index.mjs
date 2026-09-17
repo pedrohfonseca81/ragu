@@ -206,7 +206,7 @@ export async function main(argv = process.argv.slice(2)) {
 				: "add your systems to ragu.config.json, then /ragu-init <id>",
 		systems.length && !connected ? "npx create-ragu install               # connect the code repositories (AGENTS.md, MCP)" : null,
 		antigravity === "skipped" ? null : "Antigravity: restart agy / the IDE to load the ragu plugin",
-		remote ? "see README.md → Remote MCP (Cloudflare) for wrangler setup" : null,
+		remote ? "remote server: see https://github.com/pedrohfonseca81/ragu/blob/main/docs/remote-mcp.md" : null,
 	].filter(Boolean);
 	p.note(next.join("\n"), "Next steps");
 	p.outro("Done. Read AGENTS.md in the new project; it is the contract every agent follows.");

@@ -32,36 +32,22 @@ This is a nudge with a reverse map (code file → citing pages), not a formal pr
 
 ## Install
 
-**Claude Code** (per user, works in every directory):
+Per user, for every harness; nothing is copied into repositories. See [docs/agents.md](../../docs/agents.md).
 
-```bash
-claude plugin marketplace add pedrohfonseca81/ragu
-claude plugin install ragu@ragu
-```
+- **Claude Code**: `claude plugin marketplace add pedrohfonseca81/ragu && claude plugin install ragu@ragu` (from a checkout: `claude plugin marketplace add "$(pwd)"`).
+- **Antigravity** (IDE or `agy` CLI): `npx create-ragu install` copies this directory to `~/.gemini/config/plugins/ragu/` when `~/.gemini` exists, version-gated (`--force` reinstalls), with an `mcp_config.json` declaring one server, `kb` → `npx -y ragu-mcp`, exposed as `ragu_kb`. The hook reads the workspace from its stdin payload, so the global location does not matter; `ragu-mcp` resolves the knowledge base from `$PWD` or the per-user registry. `agy plugin validate ~/.gemini/config/plugins/ragu` checks the layout.
 
-**Antigravity** (IDE or `agy` CLI): per user as well, done by `create-ragu` when `~/.gemini` exists:
+## Payloads
 
-```bash
-npx create-ragu install          # from the knowledge base or one of its systems
-```
+`hooks/enforce.mjs` reads JSON on stdin and prints a JSON decision. `adapt()` normalises both dialects; adding a harness is one more entry there ([docs/hook.md](../../docs/hook.md#adding-a-harness)).
 
-copies this directory to `~/.gemini/config/plugins/ragu/` (a customization root Antigravity scans by itself; nothing goes into the repositories) and writes `mcp_config.json` next to it with one server, `kb` → `npx -y ragu-mcp`, exposed as `ragu_kb`. With no arguments `ragu-mcp` serves the knowledge base governing the workspace (`$PWD`), or every knowledge base registered on the machine. Re-running upgrades the copy only when this plugin's `plugin.json` version is newer (`--force` overrides). The hook command is relative to `hooks.json`, as Antigravity runs it from that directory; the hook reads the workspace from its stdin payload, so the global location does not matter. `agy plugin validate ~/.gemini/config/plugins/ragu` checks the layout.
+| harness | in | block | allow |
+|---|---|---|---|
+| Claude Code | `{ cwd, session_id, stop_hook_active }` | `{ decision: "block", reason }` | `{}` or `{ systemMessage }` |
+| Antigravity | `{ workspacePaths, conversationId, executionNum }` | `{ decision: "continue", reason }` | `{}` or `{ decision: "allow", reason }` |
 
-Local development (Claude Code):
-
-```bash
-claude plugin marketplace add /path/to/ragu
-claude plugin install ragu@ragu
-```
+The block is issued once per session: a lock file per session id under `$TMPDIR/ragu-hook/` (24 h), and Claude Code's `stop_hook_active` short-circuits a continuation. Antigravity runs the hook command with this directory as cwd, hence the relative path in `hooks.json`. SKILL.md `description:` values are quoted because Antigravity parses strict YAML.
 
 ## Requirements
 
-Node ≥ 20 on `PATH` (the hook runs with `node`). No other dependencies.
-
-Antigravity has no "already continuing" flag, so the hook keeps a small lock file per conversation under the OS temp dir and never re-blocks the same conversation for the same reason.
-
-## Test
-
-```bash
-node --test "plugins/ragu/test/**/*.test.mjs"
-```
+Node ≥ 20 on `PATH` (the hook runs with `node`). No other dependencies. Tests: `node --test test/` from the repository root via `npm test`.

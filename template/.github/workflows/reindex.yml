@@ -1,5 +1,5 @@
 # Recomputes the Vectorize embeddings after Cloudflare deploys the new commit.
-# Requires: repository variable KB_URL and secret REINDEX_SECRET (see README → Remote MCP).
+# Requires: repository variable KB_URL and secret REINDEX_SECRET (see https://github.com/pedrohfonseca81/ragu/blob/main/docs/remote-mcp.md).
 name: Reindex Vectorize (MCP)
 
 on:

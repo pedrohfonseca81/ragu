@@ -19,6 +19,6 @@
       "index_name": "acme-kb-docs"
     }
   ]
-  // Only when `remote.oauth` is true (see README → Advanced → OAuth):
+  // Only when `remote.oauth` is true (see https://github.com/pedrohfonseca81/ragu/blob/main/docs/remote-mcp.md):
   // "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "<id from `wrangler kv namespace create OAUTH_KV`>" }]
 }
