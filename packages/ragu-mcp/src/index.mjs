@@ -11,6 +11,8 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/server";
 import { walkMarkdown } from "./walk.mjs";
 
+const VERSION = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8")).version;
+
 export const STATUSES = ["verified", "inferred", "unverified", "outdated"];
 
 export function findConfigFile(start) {
@@ -208,7 +210,7 @@ export function searchDocs(kb, index, { query, systems, domain, status, topK, kb
 export function createServerFactory(state) {
 	return () => {
 		const { kb } = state;
-		const server = new McpServer({ name: kb.name ?? "ragu", version: "0.2.0" });
+		const server = new McpServer({ name: kb.name ?? "ragu", version: VERSION });
 		const kbHint = kb.names ? ` Serves ${kb.names.length} knowledge bases (${kb.names.join(", ")}); every document carries a \`kb\` field.` : "";
 
 		server.registerTool(
