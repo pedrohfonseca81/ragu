@@ -9,7 +9,7 @@
     {
       "name": "ragu",
       "description": "Stop hook that flags stale docs when code changes, plus /ragu-sync, /ragu-init, /ragu-adr and /ragu-audit skills.",
-      "version": "0.3.1",
+      "version": "0.4.0",
       "author": {
         "name": "Pedro Henrique Fonseca"
       },
