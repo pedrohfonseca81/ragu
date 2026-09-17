@@ -2,13 +2,15 @@
 // Pure filesystem logic, no prompts, so it can be tested without a TTY.
 //
 // For every target repository it writes:
-//   - AGENTS.md            a marked block (<!-- ragu:start --> … <!-- ragu:end -->) pointing at the
-//                          knowledge base; created if missing, replaced in place when re-run
-//   - CLAUDE.md            `@AGENTS.md` include (created or prepended)
-//   - .mcp.json            Claude Code project MCP server `<kb-name>` → `npx -y ragu-mcp`
-//   - .agents/plugins/ragu the agent plugin for Antigravity (+ mcp_config.json), version-gated
-// and registers the `.agents/plugins` directory in ~/.gemini/config/plugins.json, which the
-// Antigravity CLI needs to see workspace plugins.
+//   - AGENTS.md   a marked block (<!-- ragu:start --> … <!-- ragu:end -->) pointing at the
+//                 knowledge base; created if missing, replaced in place when re-run
+//   - CLAUDE.md   `@AGENTS.md` include (created or prepended)
+//   - .mcp.json   Claude Code project MCP server `<kb-name>` → `npx -y ragu-mcp`
+// Nothing harness-specific beyond that lands in a repository. Per user, on this machine, it also:
+//   - registers the knowledge base in $XDG_CONFIG_HOME/ragu/knowledge-bases.json, which lets
+//     `ragu-mcp` serve it when started from a directory it does not govern (a global MCP config)
+//   - installs the agent plugin for Antigravity in ~/.gemini/config/plugins/ragu when Antigravity
+//     is present (~/.gemini exists), like the Claude Code plugin is installed per user
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
@@ -84,22 +86,63 @@ function writeJson(file, data) {
 }
 
 const MCP_SERVER = { command: "npx", args: ["-y", "ragu-mcp"] };
+/** Server name inside the Antigravity plugin; Antigravity exposes it as `ragu_kb`. */
+export const ANTIGRAVITY_MCP_NAME = "kb";
+
+export function antigravityPluginDir(home = homedir()) {
+	return join(home, ".gemini", "config", "plugins", "ragu");
+}
 
 /**
- * Copies the plugin to <root>/.agents/plugins/ragu unless the installed copy is already the same
- * or a newer version (`force` overrides). Always (re)writes mcp_config.json.
- * @returns {"installed" | "updated" | "kept"}
+ * Installs the plugin for Antigravity, per user, in ~/.gemini/config/plugins/ragu (a customization
+ * root Antigravity scans by itself). Skipped when Antigravity is not set up on this machine. The
+ * copy is replaced only by a newer version (`force` overrides); mcp_config.json is always (re)written
+ * and runs `ragu-mcp` with no arguments, which resolves the knowledge base from the workspace or
+ * the registry.
+ * @returns {"installed" | "updated" | "kept" | "skipped"}
  */
-export function installPlugin(root, kbName, { force = false } = {}) {
+export function installAntigravityPlugin({ home = homedir(), force = false } = {}) {
+	if (!existsSync(join(home, ".gemini"))) return "skipped";
 	const src = pluginDir();
-	const dest = join(root, ".agents", "plugins", "ragu");
+	const dest = antigravityPluginDir(home);
 	const installed = existsSync(dest) ? pluginVersion(dest) : null;
 	let outcome = "kept";
 	if (installed === null || force || compareVersions(pluginVersion(src), installed) > 0) {
 		copyDir(src, dest);
 		outcome = installed === null ? "installed" : "updated";
 	}
-	writeJson(join(dest, "mcp_config.json"), { mcpServers: { [kbName]: MCP_SERVER } });
+	writeJson(join(dest, "mcp_config.json"), { mcpServers: { [ANTIGRAVITY_MCP_NAME]: MCP_SERVER } });
+	return outcome;
+}
+
+/** $XDG_CONFIG_HOME/ragu/knowledge-bases.json (ragu-mcp reads the same file). */
+export function registryFile({ home = homedir(), env = process.env } = {}) {
+	const base = env.XDG_CONFIG_HOME ? resolve(env.XDG_CONFIG_HOME) : join(home, ".config");
+	return join(base, "ragu", "knowledge-bases.json");
+}
+
+/**
+ * Records the knowledge base in the per-user registry. Entries whose config no longer exists are
+ * dropped on the way.
+ * @returns {"registered" | "updated" | "kept"}
+ */
+export function registerKnowledgeBase(configPath, name, opts = {}) {
+	const file = registryFile(opts);
+	const config = resolve(configPath);
+	const data = readJson(file, {});
+	const before = JSON.stringify(data.knowledgeBases ?? []);
+	const entries = (data.knowledgeBases ?? []).filter((e) => e && typeof e.config === "string" && existsSync(e.config));
+	const existing = entries.find((e) => resolve(e.config) === config);
+	let outcome;
+	if (!existing) {
+		entries.push({ name, config });
+		outcome = "registered";
+	} else {
+		outcome = existing.name === name ? "kept" : "updated";
+		existing.name = name;
+	}
+	if (outcome === "kept" && JSON.stringify(entries) === before) return outcome;
+	writeJson(file, { ...data, knowledgeBases: entries });
 	return outcome;
 }
 
@@ -109,7 +152,7 @@ export function agentsBlock({ kbRel, kbName, systemIds }) {
 	return `${BLOCK_START}
 ## Knowledge base (Ragu)
 
-The business rules, flows, integrations and decisions of this repository (system ${ids}) are documented in the Ragu knowledge base at \`${rel}/\`. Agents reach it over MCP as \`${kbName}\` (\`search_docs\`, \`get_document\`, \`list_documents\`).
+The business rules, flows, integrations and decisions of this repository (system ${ids}) are documented in the Ragu knowledge base at \`${rel}/\`. Agents reach it over MCP (\`search_docs\`, \`get_document\`, \`list_documents\`): server \`${kbName}\` from this repository's \`.mcp.json\`, or \`ragu_kb\` from the ragu plugin in Antigravity.
 
 - **Before** changing a business rule, API contract, integration or flow: search the knowledge base (\`search_docs\`) and read the pages whose \`sources:\` cite the files you are about to touch.
 - **After** changing one: update those pages, or create new ones, using the \`ragu-sync\` skill. A Stop hook reminds you once per session if code changed and the knowledge base did not.
@@ -165,28 +208,12 @@ export function mergeMcpJson(root, kbName) {
 }
 
 /**
- * Registers <root>/.agents/plugins in ~/.gemini/config/plugins.json so the Antigravity CLI loads
- * the workspace plugin. Skipped (returns "skipped") when Antigravity is not set up on this machine.
- */
-export function registerAntigravity(root, { home = homedir(), force = false } = {}) {
-	const geminiDir = join(home, ".gemini");
-	if (!existsSync(geminiDir) && !force) return "skipped";
-	const file = join(geminiDir, "config", "plugins.json");
-	const data = readJson(file, {});
-	data.entries ??= [];
-	const path = join(root, ".agents", "plugins");
-	if (data.entries.some((e) => e && resolve(String(e.path).replace(/^~(?=\/|$)/, home)) === path)) return "kept";
-	data.entries.push({ path });
-	writeJson(file, data);
-	return "registered";
-}
-
-/**
- * Connects the selected systems (all when `systemIds` is empty) and the knowledge base itself.
+ * Connects the selected systems (all when `systemIds` is empty) and the knowledge base itself,
+ * then does the per-user part: registry entry and, when present, the Antigravity plugin.
  * Systems that share one git repository (monorepo) are connected once, at the repository root.
- * @returns {{ kb: object, targets: object[] }}
+ * @returns {{ kb: object, targets: object[], registry: string, antigravity: string }}
  */
-export async function install({ configPath, systemIds = [], force = false, register = true, home = homedir() }) {
+export async function install({ configPath, systemIds = [], force = false, home = homedir(), env = process.env }) {
 	const { config, gitToplevel } = await loadConfig(configPath);
 	const unknown = systemIds.filter((id) => !config.systems.some((s) => s.id === id));
 	if (unknown.length) throw new Error(`unknown system(s): ${unknown.join(", ")} (configured: ${config.systems.map((s) => s.id).join(", ") || "none"})`);
@@ -221,16 +248,11 @@ export async function install({ configPath, systemIds = [], force = false, regis
 			agents: injectAgentsMd(g.root, { kbRel: relative(g.root, config.root), kbName: config.name, systemIds: g.ids }),
 			claude: ensureClaudeInclude(g.root),
 			mcp: mergeMcpJson(g.root, config.name),
-			plugin: installPlugin(g.root, config.name, { force }),
-			antigravity: register ? registerAntigravity(g.root, { home }) : "skipped",
 		});
 	}
 
-	const kb = {
-		root: config.root,
-		mcp: mergeMcpJson(config.root, config.name),
-		plugin: installPlugin(config.root, config.name, { force }),
-		antigravity: register ? registerAntigravity(config.root, { home }) : "skipped",
-	};
-	return { kb, targets };
+	const kb = { root: config.root, mcp: mergeMcpJson(config.root, config.name) };
+	const registry = registerKnowledgeBase(configPath, config.name, { home, env });
+	const antigravity = installAntigravityPlugin({ home, force });
+	return { kb, targets, registry, antigravity };
 }

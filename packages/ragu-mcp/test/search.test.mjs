@@ -57,3 +57,70 @@ test("findConfigFor finds a sibling knowledge base whose systems include cwd", a
 		rmSync(root, { recursive: true, force: true });
 	}
 });
+
+test("several knowledge bases merge into one index with a kb field, and kb filters apply", async () => {
+	const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+	const { tmpdir } = await import("node:os");
+	const { loadKnowledgeBases } = await import("../src/index.mjs");
+	const root = mkdtempSync(join(tmpdir(), "ragu-mcp-multi-"));
+	try {
+		for (const name of ["shop", "bank"]) {
+			mkdirSync(join(root, name, "src", "content", "docs", "domain"), { recursive: true });
+			writeFileSync(join(root, name, "ragu.config.json"), JSON.stringify({ name, title: name, systems: [{ id: `${name}-api`, path: "../x" }] }));
+			// the same path in both knowledge bases
+			writeFileSync(join(root, name, "src", "content", "docs", "domain", "refunds.md"), `---\ntitle: Refunds (${name})\nsystems: [${name}-api]\nstatus: verified\n---\nrefund policy of ${name}\n`);
+		}
+		const single = loadKnowledgeBases([join(root, "shop", "ragu.config.json")]);
+		assert.equal(single.names, undefined);
+		assert.equal(single.docs[0].kb, undefined);
+
+		const kb = loadKnowledgeBases([join(root, "shop", "ragu.config.json"), join(root, "bank", "ragu.config.json")]);
+		assert.deepEqual(kb.names, ["shop", "bank"]);
+		assert.deepEqual(kb.systems, ["shop-api", "bank-api"]);
+		assert.deepEqual(kb.docs.map((d) => d.id), ["shop:domain/refunds.md", "bank:domain/refunds.md"]);
+		const index = buildIndex(kb.docs);
+		const all = searchDocs(kb, index, { query: "refund" });
+		assert.deepEqual(all.map((r) => [r.kb, r.path]).sort(), [["bank", "domain/refunds.md"], ["shop", "domain/refunds.md"]]);
+		const bank = searchDocs(kb, index, { query: "refund", kb: "bank" });
+		assert.deepEqual(bank.map((r) => r.kb), ["bank"]);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("resolveConfigs: cwd, then $PWD, then the registry (dead entries skipped)", async () => {
+	const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+	const { tmpdir } = await import("node:os");
+	const { resolveConfigs, registryFile } = await import("../src/index.mjs");
+	const root = mkdtempSync(join(tmpdir(), "ragu-mcp-resolve-"));
+	try {
+		mkdirSync(join(root, "kb"));
+		mkdirSync(join(root, "api"));
+		mkdirSync(join(root, "elsewhere"));
+		mkdirSync(join(root, "other-kb"));
+		writeFileSync(join(root, "kb", "ragu.config.json"), JSON.stringify({ name: "kb", systems: [{ id: "api", path: "../api" }] }));
+		writeFileSync(join(root, "other-kb", "ragu.config.json"), JSON.stringify({ name: "other", systems: [] }));
+		const kbConfig = join(root, "kb", "ragu.config.json");
+		const otherConfig = join(root, "other-kb", "ragu.config.json");
+		const env = { XDG_CONFIG_HOME: join(root, "xdg") };
+
+		// 1. cwd governed
+		assert.deepEqual(resolveConfigs(join(root, "api"), { env }), [kbConfig]);
+		// 2. cwd not governed, PWD is (a global plugin launching the server from its own directory)
+		assert.deepEqual(resolveConfigs(join(root, "elsewhere"), { env: { ...env, PWD: join(root, "api") } }), [kbConfig]);
+		// 3. nothing governs: no registry → nothing
+		assert.deepEqual(resolveConfigs(join(root, "elsewhere"), { env }), []);
+		// registry with one live and one dead entry
+		const file = registryFile({ env });
+		mkdirSync(join(root, "xdg", "ragu"), { recursive: true });
+		writeFileSync(file, JSON.stringify({ knowledgeBases: [{ name: "kb", config: kbConfig }, { name: "gone", config: join(root, "gone", "ragu.config.json") }, { name: "other", config: otherConfig }] }));
+		const warnings = [];
+		assert.deepEqual(resolveConfigs(join(root, "elsewhere"), { env, log: (m) => warnings.push(m) }), [kbConfig, otherConfig]);
+		assert.equal(warnings.length, 1);
+		assert.match(warnings[0], /gone/);
+		// a governed cwd still wins over the registry
+		assert.deepEqual(resolveConfigs(join(root, "api"), { env }), [kbConfig]);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});

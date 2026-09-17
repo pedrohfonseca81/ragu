@@ -19,11 +19,12 @@ Usage: npx create-ragu [dir] [options]
   --connect | --no-connect connect the configured systems' repositories (= install)
   -y, --yes                accept defaults for anything not given
 
-Usage: npx create-ragu install [system-id ...] [--config <path>] [--force] [--no-register]
+Usage: npx create-ragu install [system-id ...] [--config <path>] [--force]
 
   Connects code repositories to the knowledge base that governs the current directory.
-  In each repository: AGENTS.md block, @AGENTS.md in CLAUDE.md, .mcp.json entry,
-  .agents/plugins/ragu (Antigravity) + registration in ~/.gemini/config/plugins.json.
+  In each repository: AGENTS.md block, @AGENTS.md in CLAUDE.md, .mcp.json entry.
+  On this machine: the knowledge base is registered in ~/.config/ragu/knowledge-bases.json
+  (for ragu-mcp) and, when Antigravity is installed, the plugin goes to ~/.gemini/config/plugins/ragu.
   Idempotent; re-run after adding a system or to upgrade the plugin.
 ```
 

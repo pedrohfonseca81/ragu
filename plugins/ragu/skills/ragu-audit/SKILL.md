@@ -1,6 +1,6 @@
 ---
 name: ragu-audit
-description: Audits the Ragu knowledge base against the code: checks every page's sources still exist and still say what the page claims, marks divergent pages outdated and records divergences. Use periodically, after large refactors, or when the user asks whether the docs are still accurate.
+description: "Audits the Ragu knowledge base against the code: checks every page's sources still exist and still say what the page claims, marks divergent pages outdated and records divergences. Use periodically, after large refactors, or when the user asks whether the docs are still accurate."
 tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 

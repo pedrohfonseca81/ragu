@@ -49,7 +49,7 @@ cd knowledge-base
 npx create-ragu install
 ```
 
-For every system this writes, in the repository root: a marked block in `AGENTS.md` (created if missing) telling agents where the knowledge base is and the three rules; `@AGENTS.md` in `CLAUDE.md`; the MCP server in `.mcp.json`; and `.agents/plugins/ragu/` (the plugin for Antigravity). It also registers the plugin directories in `~/.gemini/config/plugins.json` when Antigravity is installed on the machine. It is idempotent; re-run it after adding a system.
+For every system this writes, in the repository root: a marked block in `AGENTS.md` (created if missing) telling agents where the knowledge base is and the three rules; `@AGENTS.md` in `CLAUDE.md`; and the MCP server in `.mcp.json`. Nothing else goes into a repository. On this machine it registers the knowledge base in `~/.config/ragu/knowledge-bases.json` (for `ragu-mcp`) and, when Antigravity is installed, puts the ragu plugin in `~/.gemini/config/plugins/ragu/`. It is idempotent; re-run it after adding a system.
 
 Commit those files in each repository. If a repository already had an `AGENTS.md`, only the block between `<!-- ragu:start -->` and `<!-- ragu:end -->` was added; check that it does not contradict what was already there.
 
@@ -136,8 +136,8 @@ The full contract is `AGENTS.md` inside the knowledge base; it overrides this fi
 Tell the person:
 
 - where the knowledge base is and the systems it documents (`ragu.config.json`);
-- which files were written in each code repository (`AGENTS.md`, `CLAUDE.md`, `.mcp.json`, `.agents/plugins/ragu/`) and that they need committing;
-- whether the Claude Code plugin was installed and whether Antigravity registration happened (`~/.gemini/config/plugins.json`);
+- which files were written in each code repository (`AGENTS.md`, `CLAUDE.md`, `.mcp.json`) and that they need committing;
+- whether the Claude Code plugin was installed and whether the Antigravity plugin was installed (`~/.gemini/config/plugins/ragu/`);
 - for an existing project: the pages created by `ragu-init`, their status, and the questions left in `inbox/QUESTIONS.md`;
 - for a new project: the pages written as specification and which are still `unverified`;
 - the commands they will use: `npm run dev`, `npm run check`, `ragu-sync`, `ragu-adr`, `ragu-audit`.

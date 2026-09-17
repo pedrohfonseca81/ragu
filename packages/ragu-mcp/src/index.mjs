@@ -3,6 +3,7 @@
 // notice which one they're talking to. Search is lexical (MiniSearch): no network, no model download.
 import { readFileSync, existsSync, readdirSync, watch } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { homedir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import matter from "gray-matter";
 import MiniSearch from "minisearch";
@@ -73,6 +74,50 @@ export function findConfigFor(cwd) {
 	}
 }
 
+/** $XDG_CONFIG_HOME/ragu/knowledge-bases.json, written by `create-ragu install`. */
+export function registryFile({ home = homedir(), env = process.env } = {}) {
+	const base = env.XDG_CONFIG_HOME ? resolve(env.XDG_CONFIG_HOME) : join(home, ".config");
+	return join(base, "ragu", "knowledge-bases.json");
+}
+
+/** Registered knowledge bases whose config still exists; dead entries are reported through `log`. */
+export function readRegistry({ home, env, log = () => {} } = {}) {
+	const file = registryFile({ home, env });
+	if (!existsSync(file)) return [];
+	let entries;
+	try {
+		entries = JSON.parse(readFileSync(file, "utf-8")).knowledgeBases ?? [];
+	} catch (e) {
+		log(`ignoring ${file}: ${e.message}`);
+		return [];
+	}
+	const alive = [];
+	for (const e of entries) {
+		if (!e || typeof e.config !== "string") continue;
+		if (existsSync(e.config)) alive.push({ name: e.name, config: resolve(e.config) });
+		else log(`registry entry ${e.name ?? e.config} points at a missing ${e.config}; run \`npx create-ragu install\` from a knowledge base to prune it`);
+	}
+	return alive;
+}
+
+/**
+ * Which knowledge base(s) a `ragu-mcp` started with no `--root` should serve:
+ *  1. the one governing `cwd`;
+ *  2. the one governing `$PWD` (an MCP server launched by a global plugin may get the plugin
+ *     directory as cwd while PWD still names the workspace the agent was opened in);
+ *  3. every knowledge base in the per-user registry.
+ * @returns {string[]} config paths (empty when nothing applies)
+ */
+export function resolveConfigs(cwd, { env = process.env, home, log } = {}) {
+	const direct = findConfigFor(cwd);
+	if (direct) return [direct];
+	if (env.PWD && resolve(env.PWD) !== resolve(cwd)) {
+		const fromPwd = findConfigFor(env.PWD);
+		if (fromPwd) return [fromPwd];
+	}
+	return readRegistry({ env, home, log }).map((e) => e.config);
+}
+
 export function loadDocs(configPath) {
 	const raw = JSON.parse(readFileSync(configPath, "utf-8"));
 	const root = dirname(resolve(configPath));
@@ -81,6 +126,7 @@ export function loadDocs(configPath) {
 		const { data: fm, content } = matter(readFileSync(file, "utf-8"));
 		const path = relative(docsDir, file).replace(/\\/g, "/");
 		return {
+			id: path,
 			path,
 			title: fm.title ?? path,
 			domain: fm.domain ?? null,
@@ -102,8 +148,8 @@ export function loadDocs(configPath) {
 export function buildIndex(docs) {
 	const index = new MiniSearch({
 		fields: ["title", "content", "domain", "path"],
-		storeFields: ["path"],
-		idField: "path",
+		storeFields: ["id"],
+		idField: "id",
 		searchOptions: {
 			boost: { title: 3, domain: 2, path: 1.5 },
 			fuzzy: 0.2,
@@ -122,23 +168,25 @@ function statusWarning(status) {
 }
 
 function docSummary(d) {
-	return { path: d.path, title: d.title, domain: d.domain, systems: d.systems, status: d.status, updated_at: d.updated_at };
+	return { ...(d.kb ? { kb: d.kb } : {}), path: d.path, title: d.title, domain: d.domain, systems: d.systems, status: d.status, updated_at: d.updated_at };
 }
 
 /** Pure search over an in-memory knowledge base; exported for tests. */
-export function searchDocs(kb, index, { query, systems, domain, status, topK }) {
+export function searchDocs(kb, index, { query, systems, domain, status, topK, kb: kbName }) {
 	const k = topK ?? 5;
-	const byPath = new Map(kb.docs.map((d) => [d.path, d]));
+	const byId = new Map(kb.docs.map((d) => [d.id, d]));
 	const hits = index.search(query);
 	const results = [];
 	for (const hit of hits) {
-		const doc = byPath.get(hit.id);
+		const doc = byId.get(hit.id);
 		if (!doc) continue;
+		if (kbName && doc.kb !== kbName) continue;
 		if (systems?.length && !doc.systems.some((s) => systems.includes(s))) continue;
 		if (domain && doc.domain !== domain) continue;
 		if (status?.length && !status.includes(doc.status)) continue;
 		const warning = statusWarning(doc.status);
 		results.push({
+			...(doc.kb ? { kb: doc.kb } : {}),
 			path: doc.path,
 			title: doc.title,
 			score: Number(hit.score.toFixed(3)),
@@ -161,14 +209,16 @@ export function createServerFactory(state) {
 	return () => {
 		const { kb } = state;
 		const server = new McpServer({ name: kb.name ?? "ragu", version: "0.2.0" });
+		const kbHint = kb.names ? ` Serves ${kb.names.length} knowledge bases (${kb.names.join(", ")}); every document carries a \`kb\` field.` : "";
 
 		server.registerTool(
 			"search_docs",
 			{
 				title: "Search the knowledge base",
-				description: `Search the ${kb.title ?? "knowledge base"} (business rules, flows, integrations, decisions). Lexical search with fuzzy matching; returns the most relevant documents with metadata and full content.`,
+				description: `Search the ${kb.title ?? "knowledge base"} (business rules, flows, integrations, decisions). Lexical search with fuzzy matching; returns the most relevant documents with metadata and full content.${kbHint}`,
 				inputSchema: z.object({
 					query: z.string().describe("Question or search terms"),
+					...(kb.names ? { kb: z.string().optional().describe(`Filter by knowledge base: ${kb.names.join(", ")}`) } : {}),
 					systems: z.array(z.string()).optional().describe(`Filter by system: ${kb.systems.join(", ") || "(none configured)"}`),
 					domain: z.string().optional().describe("Filter by exact domain"),
 					status: z.array(z.string()).optional().describe(`Filter by status: ${STATUSES.join(", ")}`),
@@ -185,12 +235,19 @@ export function createServerFactory(state) {
 			"get_document",
 			{
 				title: "Read a full document",
-				description: "Returns the full markdown of one document by its exact path (e.g. domain/refunds.md).",
-				inputSchema: z.object({ path: z.string().describe("Path relative to the docs directory") }),
+				description: `Returns the full markdown of one document by its exact path (e.g. domain/refunds.md).${kbHint}`,
+				inputSchema: z.object({
+					path: z.string().describe("Path relative to the docs directory"),
+					...(kb.names ? { kb: z.string().optional().describe("Knowledge base the path belongs to; required when the same path exists in several") } : {}),
+				}),
 			},
-			async ({ path }) => {
-				const doc = state.kb.docs.find((d) => d.path === path);
-				if (!doc) return { content: [{ type: "text", text: `Document not found: ${path}` }], isError: true };
+			async ({ path, kb: kbName }) => {
+				const matches = state.kb.docs.filter((d) => d.path === path && (!kbName || d.kb === kbName));
+				if (matches.length > 1) {
+					return { content: [{ type: "text", text: `${path} exists in several knowledge bases: ${matches.map((d) => d.kb).join(", ")}. Pass kb to choose one.` }], isError: true };
+				}
+				const doc = matches[0];
+				if (!doc) return { content: [{ type: "text", text: `Document not found: ${path}${kbName ? ` in ${kbName}` : ""}` }], isError: true };
 				const warning = statusWarning(doc.status);
 				return {
 					content: [
@@ -204,11 +261,16 @@ export function createServerFactory(state) {
 			"list_documents",
 			{
 				title: "List documents",
-				description: "Lists every document, optionally filtered by system or domain. Metadata only; use get_document for the content.",
-				inputSchema: z.object({ systems: z.array(z.string()).optional(), domain: z.string().optional() }),
+				description: `Lists every document, optionally filtered by system or domain. Metadata only; use get_document for the content.${kbHint}`,
+				inputSchema: z.object({
+					...(kb.names ? { kb: z.string().optional().describe(`Filter by knowledge base: ${kb.names.join(", ")}`) } : {}),
+					systems: z.array(z.string()).optional(),
+					domain: z.string().optional(),
+				}),
 			},
-			async ({ systems, domain }) => {
+			async ({ kb: kbName, systems, domain }) => {
 				let docs = state.kb.docs;
+				if (kbName) docs = docs.filter((d) => d.kb === kbName);
 				if (systems?.length) docs = docs.filter((d) => d.systems.some((s) => systems.includes(s)));
 				if (domain) docs = docs.filter((d) => d.domain === domain);
 				return { content: [{ type: "text", text: JSON.stringify(docs.map(docSummary), null, 2) }] };
@@ -219,30 +281,51 @@ export function createServerFactory(state) {
 	};
 }
 
-/** Loads the KB, builds the index and (optionally) watches the docs dir for changes. */
-export function createState(configPath, { watchFiles = true, log = () => {} } = {}) {
+/**
+ * One knowledge base, or several merged into one index. With several, every document carries
+ * `kb` (the knowledge base's name) and ids are `<kb>:<path>` so equal paths don't collide.
+ */
+export function loadKnowledgeBases(configPaths) {
+	const paths = [].concat(configPaths);
+	if (paths.length === 1) return loadDocs(paths[0]);
+	const kbs = paths.map(loadDocs);
+	const names = kbs.map((k, i) => k.name ?? `kb${i + 1}`);
+	return {
+		name: "ragu",
+		title: `knowledge bases ${names.join(", ")}`,
+		names,
+		systems: [...new Set(kbs.flatMap((k) => k.systems))],
+		docsDirs: kbs.map((k) => k.docsDir),
+		docs: kbs.flatMap((k, i) => k.docs.map((d) => ({ ...d, kb: names[i], id: `${names[i]}:${d.path}` }))),
+	};
+}
+
+/** Loads the KB(s), builds the index and (optionally) watches the docs dirs for changes. */
+export function createState(configPaths, { watchFiles = true, log = () => {} } = {}) {
 	const state = { kb: null, index: null };
 	const reload = () => {
-		state.kb = loadDocs(configPath);
+		state.kb = loadKnowledgeBases(configPaths);
 		state.index = buildIndex(state.kb.docs);
-		log(`indexed ${state.kb.docs.length} documents from ${state.kb.docsDir}`);
+		log(`indexed ${state.kb.docs.length} documents from ${(state.kb.docsDirs ?? [state.kb.docsDir]).join(", ")}`);
 	};
 	reload();
 	if (watchFiles) {
 		let timer = null;
-		try {
-			watch(state.kb.docsDir, { recursive: true }, () => {
-				clearTimeout(timer);
-				timer = setTimeout(() => {
-					try {
-						reload();
-					} catch (e) {
-						log(`reload failed: ${e.message}`);
-					}
-				}, 300);
-			});
-		} catch (e) {
-			log(`file watching unavailable (${e.message}); restart the server after editing docs`);
+		for (const dir of state.kb.docsDirs ?? [state.kb.docsDir]) {
+			try {
+				watch(dir, { recursive: true }, () => {
+					clearTimeout(timer);
+					timer = setTimeout(() => {
+						try {
+							reload();
+						} catch (e) {
+							log(`reload failed: ${e.message}`);
+						}
+					}, 300);
+				});
+			} catch (e) {
+				log(`file watching unavailable for ${dir} (${e.message}); restart the server after editing docs`);
+			}
 		}
 	}
 	return state;

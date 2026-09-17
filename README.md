@@ -110,22 +110,21 @@ npx create-ragu install          # from the knowledge base or any of its systems
 | `AGENTS.md` | a block between `<!-- ragu:start -->` / `<!-- ragu:end -->`: where the knowledge base is, the MCP server name, and three rules (search before changing a rule, sync after, code is the truth). Created if missing; replaced in place on re-runs, nothing outside the markers is touched | every agent that reads `AGENTS.md` |
 | `CLAUDE.md` | `@AGENTS.md` include (created or prepended) | Claude Code |
 | `.mcp.json` | server `<kb-name>` → `npx -y ragu-mcp` (merged; other servers kept) | Claude Code |
-| `.agents/plugins/ragu/` | the agent plugin (Stop hook + skills + `mcp_config.json`), version-gated so re-runs only upgrade | Antigravity |
 
-It also registers `.agents/plugins` in `~/.gemini/config/plugins.json` on this machine (the Antigravity CLI does not discover workspace plugins by itself as of 1.2.3; teammates run `npx create-ragu install` once after cloning), and does the same for the knowledge base itself so ADRs and audits work from there. Commit the files in each repository.
+Nothing else lands in a repository; commit those three files. On your machine it also registers the knowledge base in `~/.config/ragu/knowledge-bases.json` (so `ragu-mcp` can serve it from anywhere, see step 4) and, when Antigravity is installed (`~/.gemini` exists), installs the agent plugin per user in `~/.gemini/config/plugins/ragu/` (version-gated; `--force` reinstalls). Teammates run `npx create-ragu install` once after cloning to get the same on their machine.
 
 In a monorepo (one git repository holding `knowledge-base/` and `apps/api`, `apps/web`) the block is written once at the repository root and lists every system.
 
 ### 4. Connect the local MCP server
 
-`ragu-mcp` is a stdio MCP server with lexical search (MiniSearch): no cloud, no model download, indexes in under a second and re-indexes when files change. Step 3 already wired it for Claude Code (`.mcp.json`) and Antigravity (`mcp_config.json`); open the agent inside one of the connected repositories and the server `<kb-name>` is there. Check it:
+`ragu-mcp` is a stdio MCP server with lexical search (MiniSearch): no cloud, no model download, indexes in under a second and re-indexes when files change. Step 3 already wired it for Claude Code (`.mcp.json`, server `<kb-name>`) and Antigravity (the plugin's `mcp_config.json`, server `ragu_kb`); open the agent inside one of the connected repositories and it is there. Check it:
 
 ```bash
 cd api
 claude mcp list                  # <kb-name>: npx -y ragu-mcp ... ✓ Connected
 ```
 
-Run with no arguments, `ragu-mcp` finds the knowledge base that governs the current directory (upwards, a configured sibling, or the monorepo), which is why the generated configs carry no paths. Anywhere else, or for another MCP client, point it at the knowledge base explicitly:
+Run with no arguments, `ragu-mcp` serves the knowledge base that governs the current directory (upwards, a configured sibling, or the monorepo), or `$PWD`, or else every knowledge base registered on this machine by `create-ragu install` (several are served as one index; each document carries a `kb` field and the tools accept a `kb` filter). That is why the generated configs carry no paths and why one user-level MCP entry covers all your projects. To pin one explicitly, or for another MCP client:
 
 ```bash
 claude mcp add knowledge-base -- npx -y ragu-mcp --root /path/to/knowledge-base
@@ -155,7 +154,7 @@ claude plugin marketplace add pedrohfonseca81/ragu
 claude plugin install ragu@ragu
 ```
 
-Antigravity (IDE or `agy` CLI) got the plugin in step 3 (`.agents/plugins/ragu/` in each repository, registered in `~/.gemini/config/plugins.json`). Same hook, same skills, activated by description instead of `/ragu-*`; `agy plugin validate .agents/plugins/ragu` checks the layout.
+Antigravity (IDE or `agy` CLI) got the plugin in step 3, per user, in `~/.gemini/config/plugins/ragu/`. Same hook, same skills, activated by description instead of `/ragu-*`; `agy plugin validate ~/.gemini/config/plugins/ragu` checks the layout.
 
 ### 6. Bootstrap the docs from an existing repo
 
@@ -391,7 +390,7 @@ Edit `sections` in `ragu.config.json`; the sidebar follows. Skills only rely on 
 }
 ```
 
-`create-ragu install [system-id ...] [--config <path>] [--force] [--no-register]` connects repositories (see [Connect your repositories](#3-connect-your-repositories)).
+`create-ragu install [system-id ...] [--config <path>] [--force]` connects repositories (see [Connect your repositories](#3-connect-your-repositories)).
 
 Scripts in a generated project:
 

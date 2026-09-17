@@ -1,6 +1,6 @@
 ---
 name: ragu-init
-description: Bootstraps the Ragu knowledge base for one existing system (repository): maps its modules, domains and business rules, asks for confirmation, then writes the initial pages with status inferred. Use when adopting Ragu on an existing codebase or adding a new system to the config.
+description: "Bootstraps the Ragu knowledge base for one existing system (repository): maps its modules, domains and business rules, asks for confirmation, then writes the initial pages with status inferred. Use when adopting Ragu on an existing codebase or adding a new system to the config."
 tools: Read, Glob, Grep, Bash, Edit, Write, AskUserQuestion
 ---
 
@@ -62,7 +62,7 @@ Link pages to each other with relative markdown links. Add the system to `index.
 
 ## Connect the repository
 
-Run `npx create-ragu install <system-id>` from the knowledge base. It writes, in the system's repository, a marked block in `AGENTS.md` pointing at the knowledge base, `@AGENTS.md` in `CLAUDE.md`, the MCP server in `.mcp.json`, and the agent plugin in `.agents/plugins/ragu/` (Antigravity). Tell the user to commit those files there. Do not hand-write the block: the command is idempotent and future runs update it in place.
+Run `npx create-ragu install <system-id>` from the knowledge base. It writes, in the system's repository, a marked block in `AGENTS.md` pointing at the knowledge base, `@AGENTS.md` in `CLAUDE.md`, and the MCP server in `.mcp.json`. Tell the user to commit those files there. Do not hand-write the block: the command is idempotent and future runs update it in place.
 
 ## Validate and report
 
