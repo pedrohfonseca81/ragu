@@ -25,7 +25,7 @@ Keep a single Node.js service with clear module boundaries (`orders/`, `catalog/
 
 ## Alternatives considered
 
-- Separate payments service — rejected: the webhook handler needs order state anyway.
+- Separate payments service, rejected: the webhook handler needs order state anyway.
 
 ## Consequences
 

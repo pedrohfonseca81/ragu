@@ -2,7 +2,7 @@
   <img src="assets/ragu-banner.png" alt="Ragu" width="720">
 </p>
 
-<p align="center"><strong>A knowledge base that stays true to your code — and that your agents can actually use.</strong></p>
+<p align="center"><strong>A knowledge base that stays true to your code, and that your agents can actually use.</strong></p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/create-ragu"><img alt="create-ragu on npm" src="https://img.shields.io/npm/v/create-ragu?label=create-ragu&color=c0392b"></a>
@@ -14,7 +14,7 @@
 Ragu gives you a markdown knowledge base for business rules, flows, integrations and decisions, with three things most doc setups lack:
 
 1. **Every page cites the code it describes** (`sources: api/src/billing/refund.ts:42`), and the build fails when a citation or a link breaks.
-2. **Agents read it over MCP** — locally in one command, or remotely on Cloudflare with semantic search.
+2. **Agents read it over MCP**: locally in one command, or remotely on Cloudflare with semantic search.
 3. **An agent plugin keeps it in sync** (Claude Code and Antigravity). When code changes and the docs don't, the agent is stopped with the exact list of pages that cite the changed files, before it declares the task done.
 
 Humans get a [Starlight](https://starlight.astro.build) site and an Obsidian vault from the same files. Nothing is hidden behind a service: it is markdown, a JSON config, and a few hundred lines of Node.
@@ -70,13 +70,13 @@ Requirements: Node ≥ 20, git. Claude Code or Antigravity for the plugin (optio
 npx create-ragu knowledge-base
 ```
 
-The wizard asks for a name, a title, the systems you want to document (`api:../api, web:../web` — ids plus paths relative to the knowledge base), whether you want the Cloudflare remote server, and whether to start with the example docs (a fictional bookshop). Non-interactive:
+The wizard asks for a name, a title, the systems you want to document (`api:../api, web:../web`, ids plus paths relative to the knowledge base), whether you want the Cloudflare remote server, and whether to start with the example docs (a fictional bookshop). Non-interactive:
 
 ```bash
 npx create-ragu knowledge-base --systems "api:../api,web:../web" --no-remote --no-install --no-plugin
 ```
 
-Recommended layout — the knowledge base as a **sibling** of the repos it documents:
+Recommended layout: the knowledge base as a **sibling** of the repos it documents:
 
 ```
 work/
@@ -116,7 +116,27 @@ It also registers `.agents/plugins` in `~/.gemini/config/plugins.json` on this m
 
 In a monorepo (one git repository holding `knowledge-base/` and `apps/api`, `apps/web`) the block is written once at the repository root and lists every system.
 
-**MCP.** `ragu-mcp` is a stdio MCP server with lexical search (MiniSearch), no cloud. Run with no arguments it finds the knowledge base that governs the current directory (upwards, a configured sibling, or the monorepo) — which is why the generated configs need no paths. It re-indexes when files change. Three tools:
+### 4. Connect the local MCP server
+
+`ragu-mcp` is a stdio MCP server with lexical search (MiniSearch): no cloud, no model download, indexes in under a second and re-indexes when files change. Step 3 already wired it for Claude Code (`.mcp.json`) and Antigravity (`mcp_config.json`); open the agent inside one of the connected repositories and the server `<kb-name>` is there. Check it:
+
+```bash
+cd api
+claude mcp list                  # <kb-name>: npx -y ragu-mcp ... ✓ Connected
+```
+
+Run with no arguments, `ragu-mcp` finds the knowledge base that governs the current directory (upwards, a configured sibling, or the monorepo), which is why the generated configs carry no paths. Anywhere else, or for another MCP client, point it at the knowledge base explicitly:
+
+```bash
+claude mcp add knowledge-base -- npx -y ragu-mcp --root /path/to/knowledge-base
+```
+
+```json
+// Cursor (.cursor/mcp.json), Windsurf, or any client that takes a stdio server config
+{ "mcpServers": { "knowledge-base": { "command": "npx", "args": ["-y", "ragu-mcp", "--root", "/path/to/knowledge-base"] } } }
+```
+
+Three tools:
 
 | tool | input | returns |
 |---|---|---|
@@ -124,9 +144,9 @@ In a monorepo (one git repository holding `knowledge-base/` and `apps/api`, `app
 | `get_document` | `path` (e.g. `domain/refunds.md`) | one document |
 | `list_documents` | optional `systems[]`, `domain` | metadata only |
 
-Pages with `status: outdated` come back with a warning so the agent doesn't trust them blindly. To add it by hand: `claude mcp add knowledge-base -- npx ragu-mcp --root /path/to/knowledge-base`.
+Pages with `status: outdated` come back with a warning so the agent doesn't trust them blindly. Try it: ask the agent *"search the knowledge base for refunds"* and it should call `search_docs`.
 
-### 4. Install the agent plugin
+### 5. Install the agent plugin
 
 Claude Code plugins are per user, so this is the one step `install` cannot do for you:
 
@@ -137,7 +157,7 @@ claude plugin install ragu@ragu
 
 Antigravity (IDE or `agy` CLI) got the plugin in step 3 (`.agents/plugins/ragu/` in each repository, registered in `~/.gemini/config/plugins.json`). Same hook, same skills, activated by description instead of `/ragu-*`; `agy plugin validate .agents/plugins/ragu` checks the layout.
 
-### 5. Bootstrap the docs from an existing repo
+### 6. Bootstrap the docs from an existing repo
 
 In Claude Code, from anywhere inside the workspace:
 
@@ -145,7 +165,7 @@ In Claude Code, from anywhere inside the workspace:
 /ragu-init api
 ```
 
-The skill explores the repo and writes a **map** to `inbox/init-api.md` — modules, domain candidates with `file:line`, integrations, flows, open questions, proposed pages — then **stops and asks** which pages to create. Only after you confirm does it write `systems/api.md`, glossary rows and `domain/*.md` pages, all with `status: inferred` and `human_reviewed: false`, and runs `npx create-ragu install api` so the repository is connected. Review the pages; flip `human_reviewed` yourself when a page is right.
+The skill explores the repo and writes a **map** to `inbox/init-api.md` (modules, domain candidates with `file:line`, integrations, flows, open questions, proposed pages), then **stops and asks** which pages to create. Only after you confirm does it write `systems/api.md`, glossary rows and `domain/*.md` pages, all with `status: inferred` and `human_reviewed: false`, and runs `npx create-ragu install api` so the repository is connected. Review the pages; flip `human_reviewed` yourself when a page is right.
 
 ---
 
@@ -162,7 +182,7 @@ Read https://raw.githubusercontent.com/pedrohfonseca81/ragu/main/AGENT-SETUP.md 
 Systems: api (./api), web (./web). Knowledge base at ./knowledge-base.
 ```
 
-It creates the knowledge base, connects each repository (`AGENTS.md` block, MCP, plugin), and either bootstraps the docs from the code (`ragu-init`, one system at a time, asking before writing) or — for a new project — writes the rules you dictate as `unverified` pages that the code will later verify.
+It creates the knowledge base, connects each repository (`AGENTS.md` block, MCP, plugin), and either bootstraps the docs from the code (`ragu-init`, one system at a time, asking before writing) or, for a new project, writes the rules you dictate as `unverified` pages that the code will later verify.
 
 ### Existing project: docs come from the code
 
@@ -171,20 +191,20 @@ npx create-ragu knowledge-base --systems "api:../api,web:../web" --no-remote --i
 claude plugin marketplace add pedrohfonseca81/ragu && claude plugin install ragu@ragu             # 2. Claude Code plugin (per user)
 ```
 
-Then `/ragu-init api` in Claude Code (or "ragu-init api" in Antigravity). You get a map in `inbox/init-api.md`, confirm which pages to create, and end with `systems/api.md`, glossary rows and one `domain/*.md` per business rule — each `status: inferred` with `file:line` sources. Read them; flip `human_reviewed: true` on the ones that are right. Repeat per system.
+Then `/ragu-init api` in Claude Code (or "ragu-init api" in Antigravity). You get a map in `inbox/init-api.md`, confirm which pages to create, and end with `systems/api.md`, glossary rows and one `domain/*.md` per business rule, each `status: inferred` with `file:line` sources. Read them; flip `human_reviewed: true` on the ones that are right. Repeat per system.
 
 ### New project: docs are the spec
 
-Same scaffold with empty repositories. Write the rules you already know as pages with `status: unverified` and `sources: []` (from `templates/`), record the first decisions with `/ragu-adr`. As you implement, the Stop hook notices code changes and asks for `ragu-sync`, which turns `unverified` into `verified` with real sources. A page the code ends up contradicting becomes `outdated` and lands in `inbox/DIVERGENCES.md` — a spec/implementation conflict, caught at the moment it happens.
+Same scaffold with empty repositories. Write the rules you already know as pages with `status: unverified` and `sources: []` (from `templates/`), record the first decisions with `/ragu-adr`. As you implement, the Stop hook notices code changes and asks for `ragu-sync`, which turns `unverified` into `verified` with real sources. A page the code ends up contradicting becomes `outdated` and lands in `inbox/DIVERGENCES.md`: a spec/implementation conflict, caught at the moment it happens.
 
 ### A day with it
 
 You, in `api/`: *"Extend the refund window from 30 to 45 days."*
 
-1. The agent searches the knowledge base (`search_docs "refund"`), reads `domain/refunds.md` (`sources: api/src/billing/refund.ts:18`) and finds it links `decisions/0004-refund-window.md` — the 30 days came from a payment-provider chargeback limit. It tells you before changing anything.
+1. The agent searches the knowledge base (`search_docs "refund"`), reads `domain/refunds.md` (`sources: api/src/billing/refund.ts:18`) and finds it links `decisions/0004-refund-window.md`: the 30 days came from a payment-provider chargeback limit. It tells you before changing anything.
 2. You say go. It edits `refund.ts`, and tries to finish.
-3. The Stop hook: *"Code changed but the knowledge base did not — `domain/refunds.md` cites `api/src/billing/refund.ts:18`."* The agent updates the page (new value, same source line, `updated_at` today), writes `decisions/0009-refund-window-45-days.md` with the reason you gave, runs `npm run check`, and only then finishes.
-4. Next week a teammate's agent — in another repo, another tool — asks "why 45 days?" and gets the ADR, not a guess.
+3. The Stop hook: *"Code changed but the knowledge base did not: `domain/refunds.md` cites `api/src/billing/refund.ts:18`."* The agent updates the page (new value, same source line, `updated_at` today), writes `decisions/0009-refund-window-45-days.md` with the reason you gave, runs `npm run check`, and only then finishes.
+4. Next week a teammate's agent, in another repo, another tool, asks "why 45 days?" and gets the ADR, not a guess.
 
 Nothing here depends on the agent remembering to document: the `sources:` reverse map and the hook do the remembering. Your part is reviewing pages and flipping `human_reviewed`.
 
@@ -212,9 +232,9 @@ Claude is done
                    Update them (/ragu-sync), or say why this change is purely technical."
 ```
 
-The reverse map — *changed file → pages that cite it* — comes from the `sources:` frontmatter, which is why the skills insist on precise citations. It is a strong nudge, not a proof: after one block the agent may finish with a justification (refactors, lint, tests). The `check.mjs` gate is what keeps the base structurally valid at all times: frontmatter schema, relative links, `sources` that point at existing files, unique ADR numbers. It runs in under two seconds; the full Astro build (with the Starlight links validator and Mermaid rendering) runs in CI.
+The reverse map (*changed file → pages that cite it*) comes from the `sources:` frontmatter, which is why the skills insist on precise citations. It is a strong nudge, not a proof: after one block the agent may finish with a justification (refactors, lint, tests). The `check.mjs` gate is what keeps the base structurally valid at all times: frontmatter schema, relative links, `sources` that point at existing files, unique ADR numbers. It runs in under two seconds; the full Astro build (with the Starlight links validator and Mermaid rendering) runs in CI.
 
-How the hook finds the knowledge base from a code repo: it walks up from `cwd` looking for `ragu.config.json`, and at each level also looks one directory down — so a sibling `knowledge-base/` is found from `api/src/...`, but only if `api` is one of its configured `systems`. The workspace directory that holds the knowledge base *and* at least one of its systems (the sibling layout's parent, or a monorepo root) is governed by it too, so the hook also runs when the agent is started from there. Git worktrees are followed: a linked worktree of a system (`git worktree add`, or Claude Code's `.claude/worktrees/<branch>/`) is governed by the same knowledge base, and the hook inspects the worktree being edited rather than the main checkout; a `ragu.config.json` read from a worktree of the knowledge base still resolves its `systems` from the main tree. Set `RAGU_CONFIG=/path/to/ragu.config.json` to force it.
+How the hook finds the knowledge base from a code repo: it walks up from `cwd` looking for `ragu.config.json`, and at each level also looks one directory down, so a sibling `knowledge-base/` is found from `api/src/...`, but only if `api` is one of its configured `systems`. The workspace directory that holds the knowledge base *and* at least one of its systems (the sibling layout's parent, or a monorepo root) is governed by it too, so the hook also runs when the agent is started from there. Git worktrees are followed: a linked worktree of a system (`git worktree add`, or Claude Code's `.claude/worktrees/<branch>/`) is governed by the same knowledge base, and the hook inspects the worktree being edited rather than the main checkout; a `ragu.config.json` read from a worktree of the knowledge base still resolves its `systems` from the main tree. Set `RAGU_CONFIG=/path/to/ragu.config.json` to force it.
 
 ---
 
@@ -240,11 +260,11 @@ updated_at: 2026-01-01
 | `verified` | confirmed in code; `sources` has `file:line` |
 | `inferred` | deduced from behaviour; no named rule in the code |
 | `unverified` | inherited from prose docs, not yet checked against code |
-| `outdated` | code and page disagree — recorded in `inbox/DIVERGENCES.md`; served with a warning |
+| `outdated` | code and page disagree, recorded in `inbox/DIVERGENCES.md`; served with a warning |
 
 Default sections (configurable): `systems/` one page per repo · `domain/` one rule per page · `flows/` sequence diagrams · `integrations/` third parties · `decisions/` ADRs `NNNN-slug.md` · `standards/` conventions · `glossary.md` business term → code. Page templates live in `templates/`.
 
-The rules agents follow are in the generated `AGENTS.md` (`CLAUDE.md` includes it). The two that matter most: **code defines the truth**, and **never invent the why** — if the motivation isn't in code or an ADR, write `Reason not documented` and log a question in `inbox/QUESTIONS.md`.
+The rules agents follow are in the generated `AGENTS.md` (`CLAUDE.md` includes it). The two that matter most: **code defines the truth**, and **never invent the why**: if the motivation isn't in code or an ADR, write `Reason not documented` and log a question in `inbox/QUESTIONS.md`.
 
 ---
 
@@ -272,7 +292,7 @@ npx wrangler login
 npx wrangler vectorize create <name>-docs --dimensions=1024 --metric=cosine
 
 # 2. secrets
-npx wrangler secret put MCP_TOKENS        # alice:<random>,bob:<random>  — one per person/client, revocable individually
+npx wrangler secret put MCP_TOKENS        # alice:<random>,bob:<random>, one per person/client, revocable individually
 npx wrangler secret put REINDEX_SECRET    # any random string
 
 # 3. first deploy + first index
@@ -314,7 +334,7 @@ The claude.ai web app can't send a static bearer header; it needs an OAuth flow.
    ```jsonc
    "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "<id>" }]
    ```
-3. In the Cloudflare dashboard, put the worker behind **Cloudflare Access** (Zero Trust → Access → Applications) with an email OTP or SSO policy, and add a bypass rule for `/mcp*`, `/oauth/*`, `/admin/*` and `/.well-known/*`. `/authorize` must **not** be bypassed — the worker trusts the `Cf-Access-Authenticated-User-Email` header Access sets after login.
+3. In the Cloudflare dashboard, put the worker behind **Cloudflare Access** (Zero Trust → Access → Applications) with an email OTP or SSO policy, and add a bypass rule for `/mcp*`, `/oauth/*`, `/admin/*` and `/.well-known/*`. `/authorize` must **not** be bypassed: the worker trusts the `Cf-Access-Authenticated-User-Email` header Access sets after login.
 4. Deploy. Static tokens keep working alongside OAuth.
 
 ### Obsidian
@@ -378,7 +398,7 @@ Scripts in a generated project:
 | command | what |
 |---|---|
 | `npm run dev` | Starlight dev server |
-| `npm run check` | fast validation (frontmatter, links, sources, ADR numbers) — what the hook runs |
+| `npm run check` | fast validation (frontmatter, links, sources, ADR numbers); what the hook runs |
 | `npm run build` | `check` + docs bundle + Astro build with links validator and Mermaid |
 | `npm run mcp` | local MCP server (same as `npx ragu-mcp --root .`) |
 | `npm run deploy` | remote only: `check` + bundle + `wrangler deploy` |

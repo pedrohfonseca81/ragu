@@ -25,7 +25,7 @@ interface Env {
 	VECTORIZE_INDEX: VectorizeIndex;
 	ASSETS: Fetcher;
 	OAUTH_KV?: KVNamespace;
-	/** `name:token,name2:token2` — one revocable token per person/client. */
+	/** `name:token,name2:token2`: one revocable token per person/client. */
 	MCP_TOKENS: string;
 	REINDEX_SECRET: string;
 }
@@ -54,7 +54,7 @@ function systemsMetadata(systems: string[]): Record<string, boolean> {
 
 function statusWarning(status: string): string | null {
 	if (status === "outdated") {
-		return "⚠️ status: outdated — this document is known to diverge from the current code. Check the sources before trusting it.";
+		return "⚠️ status: outdated. This document is known to diverge from the current code. Check the sources before trusting it.";
 	}
 	return null;
 }
@@ -160,7 +160,7 @@ function buildServer(env: Env): McpServer {
 		{
 			title: "List documents",
 			description:
-				"Lists every document in the knowledge base, optionally filtered by system or domain. Returns metadata only — use get_document for the content.",
+				"Lists every document in the knowledge base, optionally filtered by system or domain. Returns metadata only; use get_document for the content.",
 			inputSchema: z.object({
 				systems: z.array(z.string()).optional(),
 				domain: z.string().optional(),
@@ -288,7 +288,7 @@ const oauthDefaultHandler = {
 		if (url.pathname === "/authorize") {
 			const email = request.headers.get("Cf-Access-Authenticated-User-Email");
 			if (!email) {
-				return new Response("Unauthorized — expected Cloudflare Access header", { status: 401 });
+				return new Response("Unauthorized: expected Cloudflare Access header", { status: 401 });
 			}
 			const oauthApi = getOAuthApi(providerOptions, env);
 			const authReq = await oauthApi.parseAuthRequest(request);

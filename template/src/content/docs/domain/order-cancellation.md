@@ -24,7 +24,7 @@ Reason not documented. (Likely to avoid reverse logistics; see `inbox/QUESTIONS.
 
 ## Exceptions
 
-Support staff can cancel any order via the admin endpoint, which bypasses the status check — `api/src/orders/admin-cancel.ts:9`.
+Support staff can cancel any order via the admin endpoint, which bypasses the status check (`api/src/orders/admin-cancel.ts:9`).
 
 ## Related
 

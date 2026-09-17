@@ -14,7 +14,7 @@ Every error from [api](../systems/api.md) is a JSON body `{ "code": "SNAKE_CASE"
 ## Rules
 
 - Domain errors extend `DomainError` and declare their `code` and `status` (`api/src/http/errors.ts:3`).
-- `web` renders `message` verbatim and never branches on it — only on `code`.
+- `web` renders `message` verbatim and never branches on it, only on `code`.
 
 ## Related
 

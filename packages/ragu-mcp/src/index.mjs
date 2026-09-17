@@ -1,6 +1,6 @@
 // ragu-mcp: local stdio MCP server over a Ragu knowledge base.
 // Same three tools and signatures as the remote Cloudflare worker, so agents don't
-// notice which one they're talking to. Search is lexical (MiniSearch) — no network, no model download.
+// notice which one they're talking to. Search is lexical (MiniSearch): no network, no model download.
 import { readFileSync, existsSync, readdirSync, watch } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
@@ -117,7 +117,7 @@ export function buildIndex(docs) {
 
 function statusWarning(status) {
 	return status === "outdated"
-		? "⚠️ status: outdated — this document is known to diverge from the current code. Check the sources before trusting it."
+		? "⚠️ status: outdated. This document is known to diverge from the current code. Check the sources before trusting it."
 		: null;
 }
 
@@ -204,7 +204,7 @@ export function createServerFactory(state) {
 			"list_documents",
 			{
 				title: "List documents",
-				description: "Lists every document, optionally filtered by system or domain. Metadata only — use get_document for the content.",
+				description: "Lists every document, optionally filtered by system or domain. Metadata only; use get_document for the content.",
 				inputSchema: z.object({ systems: z.array(z.string()).optional(), domain: z.string().optional() }),
 			},
 			async ({ systems, domain }) => {

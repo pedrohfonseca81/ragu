@@ -159,8 +159,8 @@ function writeEmptyDocs(dest, answers) {
 	}
 	const today = new Date().toISOString().slice(0, 10);
 	const systemsList = answers.systems.length
-		? answers.systems.map((s) => `- \`${s.id}\` — _describe this system_`).join("\n")
-		: "_No systems configured yet — add them to `ragu.config.json`._";
+		? answers.systems.map((s) => `- \`${s.id}\`: _describe this system_`).join("\n")
+		: "_No systems configured yet; add them to `ragu.config.json`._";
 	writeFileSync(
 		join(docs, "index.md"),
 		`---\ntitle: Overview\nstatus: unverified\nhuman_reviewed: false\nsources: []\nupdated_at: ${today}\n---\n\nWhat this product does, which systems exist and how they talk to each other.\n\n## Systems\n\n${systemsList}\n\n\`\`\`mermaid\nflowchart LR\n    a[system a] --> b[system b]\n\`\`\`\n\nRun \`/ragu-init <system-id>\` in Claude Code to bootstrap the documentation of a system.\n`,
@@ -198,7 +198,7 @@ claude mcp add --transport http ${a.name} https://<your-worker-url>/mcp --header
 		: "";
 	return `# ${a.title}
 
-Knowledge base for ${a.systems.map((s) => `\`${s.id}\``).join(", ") || "this project"} — business rules, flows, integrations and decisions, kept in sync with the code. Built with [Ragu](https://github.com/pedrohfonseca81/ragu).
+Knowledge base for ${a.systems.map((s) => `\`${s.id}\``).join(", ") || "this project"}: business rules, flows, integrations and decisions, kept in sync with the code. Built with [Ragu](https://github.com/pedrohfonseca81/ragu).
 
 ## Use
 
@@ -228,7 +228,7 @@ claude plugin install ragu@ragu
 # Antigravity: .agents/plugins/ragu/ in this repo, registered in ~/.gemini/config/plugins.json by create-ragu
 \`\`\`
 
-Connect the code repositories (AGENTS.md block, \`.mcp.json\`, \`.agents/plugins/ragu\` in each) — re-run whenever a system is added or the plugin is updated:
+Connect the code repositories (AGENTS.md block, \`.mcp.json\`, \`.agents/plugins/ragu\` in each); re-run whenever a system is added or the plugin is updated:
 
 \`\`\`bash
 npx create-ragu install
@@ -236,10 +236,10 @@ npx create-ragu install
 ${remote}
 ## Layout
 
-- \`ragu.config.json\` — systems, sections, remote settings (single source of truth)
-- \`AGENTS.md\` — rules every agent must follow
-- \`src/content/docs/\` — the vault (Starlight + Obsidian)
-- \`templates/\` — page templates
-- \`inbox/\` — open questions and divergences (not published)
+- \`ragu.config.json\`: systems, sections, remote settings (single source of truth)
+- \`AGENTS.md\`: rules every agent must follow
+- \`src/content/docs/\`: the vault (Starlight + Obsidian)
+- \`templates/\`: page templates
+- \`inbox/\`: open questions and divergences (not published)
 `;
 }

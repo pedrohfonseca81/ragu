@@ -28,7 +28,7 @@ Calls [api](api.md) over REST (`NEXT_PUBLIC_API_URL`).
 
 ## Main areas of the code
 
-- `app/checkout/` — the checkout pages, see [Checkout flow](../flows/checkout.md).
+- `app/checkout/`: the checkout pages, see [Checkout flow](../flows/checkout.md).
 
 ## Related
 

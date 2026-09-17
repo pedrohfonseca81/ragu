@@ -1,10 +1,10 @@
 ---
 name: ragu-audit
-description: Audits the Ragu knowledge base against the code — checks every page's sources still exist and still say what the page claims, marks divergent pages outdated and records divergences. Use periodically, after large refactors, or when the user asks whether the docs are still accurate.
+description: Audits the Ragu knowledge base against the code: checks every page's sources still exist and still say what the page claims, marks divergent pages outdated and records divergences. Use periodically, after large refactors, or when the user asks whether the docs are still accurate.
 tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
-# /ragu-audit [section-or-path] — verify the knowledge base against the code
+# /ragu-audit [section-or-path]: verify the knowledge base against the code
 
 Optional argument narrows the audit to one section (`domain`), one page (`domain/refunds.md`) or one system id. Default: everything, in this order: `domain/`, `flows/`, `integrations/`, `decisions/`, `systems/`, `standards/`, `glossary.md`.
 
@@ -24,7 +24,7 @@ If the last commit date of any source is **after** the page's `updated_at`, the 
 ## 2. Semantic pass (suspect pages first, then the rest)
 
 For each page:
-1. Read the page and every `sources:` entry (the file, around the cited line — the line number may have drifted; find the construct by name).
+1. Read the page and every `sources:` entry (the file, around the cited line; the line number may have drifted, find the construct by name).
 2. Compare claim by claim: values, conditions, allowed statuses, error codes, exceptions, who can do what.
 3. Decide:
    - **Accurate** → refresh line numbers if they drifted, set `updated_at` today, keep `status`.

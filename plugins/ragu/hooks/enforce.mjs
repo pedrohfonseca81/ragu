@@ -157,7 +157,7 @@ export function main(input = readStdinJson()) {
 				"2. Decide whether this change creates, alters or removes a business rule, API contract, integration or flow.\n" +
 				`3. If yes: update or create the pages under ${docsRel}/ (frontmatter: title, domain, systems, status, sources, updated_at), keep \`sources:\` pointing at the exact files/lines, and run \`npm run check\` in the knowledge base.\n` +
 				"4. Record open questions or divergences in inbox/QUESTIONS.md or inbox/DIVERGENCES.md.\n" +
-				"5. If the change is strictly technical (refactor, lint, tests, dependencies) with no impact on documented behaviour, you may finish — say so explicitly in your final answer.",
+				"5. If the change is strictly technical (refactor, lint, tests, dependencies) with no impact on documented behaviour, you may finish; say so explicitly in your final answer.",
 		),
 	);
 }

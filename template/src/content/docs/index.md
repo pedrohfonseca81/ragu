@@ -20,8 +20,8 @@ flowchart LR
     pay -->|webhooks| api
 ```
 
-- [api](systems/api.md) — orders, catalogue, payments.
-- [web](systems/web.md) — customer-facing storefront.
+- [api](systems/api.md): orders, catalogue, payments.
+- [web](systems/web.md): customer-facing storefront.
 
 ## Where to look
 

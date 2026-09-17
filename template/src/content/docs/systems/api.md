@@ -21,7 +21,7 @@ TypeScript, Fastify, PostgreSQL via Prisma. npm.
 
 ## How to run
 
-`npm install && npm run dev` — see the repository README for environment variables.
+`npm install && npm run dev`; see the repository README for environment variables.
 
 ## Communication with other systems
 
@@ -30,9 +30,9 @@ TypeScript, Fastify, PostgreSQL via Prisma. npm.
 
 ## Main areas of the code
 
-- `src/orders/` — order lifecycle, including [cancellation](../domain/order-cancellation.md).
-- `src/catalog/` — books and stock.
-- `src/payments/` — gateway client and webhook handler.
+- `src/orders/`: order lifecycle, including [cancellation](../domain/order-cancellation.md).
+- `src/catalog/`: books and stock.
+- `src/payments/`: gateway client and webhook handler.
 
 ## Related
 

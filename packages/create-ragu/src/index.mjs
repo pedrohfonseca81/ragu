@@ -5,7 +5,7 @@ import * as p from "@clack/prompts";
 import { parseSystems, scaffold, slugify } from "./scaffold.mjs";
 import { findConfig, install, registerAntigravity } from "./install.mjs";
 
-const HELP = `create-ragu — scaffold a code-backed knowledge base
+const HELP = `create-ragu: scaffold a code-backed knowledge base
 
 Usage: npx create-ragu [dir] [options]
        npx create-ragu install [system-id ...] [options]
@@ -23,7 +23,7 @@ Options:
   -y, --yes                accept defaults for anything not given
   -h, --help
 
-install — connect code repositories to the knowledge base that governs the current directory
+install: connect code repositories to the knowledge base that governs the current directory
   (or --config <ragu.config.json>). With no system ids, all configured systems. In every repository:
   AGENTS.md block, @AGENTS.md in CLAUDE.md, .mcp.json entry, .agents/plugins/ragu (Antigravity),
   plus registration in ~/.gemini/config/plugins.json. Re-run any time; it is idempotent.
@@ -159,7 +159,7 @@ export async function main(argv = process.argv.slice(2)) {
 
 	if (install) {
 		p.log.step("Installing dependencies");
-		if (!run("npm", ["install"], dest)) p.log.warn("npm install failed — run it manually.");
+		if (!run("npm", ["install"], dest)) p.log.warn("npm install failed; run it manually.");
 	}
 
 	if (plugin) {
@@ -167,7 +167,7 @@ export async function main(argv = process.argv.slice(2)) {
 		else {
 			p.log.step("Installing the ragu plugin");
 			const ok = run("claude", ["plugin", "marketplace", "add", "pedrohfonseca81/ragu"], dest) && run("claude", ["plugin", "install", "ragu@ragu"], dest);
-			if (!ok) p.log.warn("Plugin install failed — see the README for the manual commands.");
+			if (!ok) p.log.warn("Plugin install failed; see the README for the manual commands.");
 		}
 	}
 
@@ -188,7 +188,7 @@ export async function main(argv = process.argv.slice(2)) {
 			connected = await install({ configPath: join(dest, "ragu.config.json"), systemIds: connectable.map((s) => s.id), register: flags.register !== false });
 			for (const line of describeInstall(connected)) p.log.info(line);
 		} catch (e) {
-			p.log.warn(`Connecting failed: ${e.message} — run \`npx create-ragu install\` later.`);
+			p.log.warn(`Connecting failed: ${e.message}. Run \`npx create-ragu install\` later.`);
 		}
 	}
 
@@ -209,7 +209,7 @@ export async function main(argv = process.argv.slice(2)) {
 		remote ? "see README.md → Remote MCP (Cloudflare) for wrangler setup" : null,
 	].filter(Boolean);
 	p.note(next.join("\n"), "Next steps");
-	p.outro("Done. Read AGENTS.md in the new project — it is the contract every agent follows.");
+	p.outro("Done. Read AGENTS.md in the new project; it is the contract every agent follows.");
 }
 
 function describeInstall({ kb, targets }) {
@@ -243,7 +243,7 @@ async function installMain(flags, ids) {
 		"Commit AGENTS.md, CLAUDE.md, .mcp.json and .agents/ in each repository so the whole team gets them.",
 		result.targets.some((t) => t.antigravity === "registered") || result.kb.antigravity === "registered" ? "Antigravity: restart agy / the IDE to load the plugin." : null,
 		result.kb.antigravity === "skipped" && flags.register !== false ? "Antigravity not detected (~/.gemini missing); run again after installing it to register the plugin." : null,
-		"Claude Code: plugin is per user — `claude plugin marketplace add pedrohfonseca81/ragu && claude plugin install ragu@ragu`.",
+		"Claude Code: plugin is per user; `claude plugin marketplace add pedrohfonseca81/ragu && claude plugin install ragu@ragu`.",
 	].filter(Boolean);
 	p.note(notes.join("\n"), "Next steps");
 	p.outro("Done.");

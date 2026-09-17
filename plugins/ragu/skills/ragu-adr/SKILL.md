@@ -4,7 +4,7 @@ description: Creates a new Architecture Decision Record in the Ragu knowledge ba
 tools: Read, Glob, Grep, Bash, Edit, Write
 ---
 
-# /ragu-adr <short title> — record a decision
+# /ragu-adr <short title>: record a decision
 
 ## 1. Number and file name
 
@@ -16,7 +16,7 @@ Start from `templates/adr.md`. Fill every section; never leave template placehol
 
 - **Title**: `NNNN - <title>`.
 - **Frontmatter**: `domain` (the area the decision affects), `systems` (ids from the config that it touches), `status: unverified` for a decision not yet implemented or `verified` when you checked the code implements it, `sources` (the ADR in the code repo if one exists, plus the code that implements it), `updated_at` today, `human_reviewed: false`.
-- **Status**: `proposed` (default) or `accepted` if the user says it is decided. `superseded` only when replacing an older ADR — then edit the old one's Status to `superseded` and link both ways.
+- **Status**: `proposed` (default) or `accepted` if the user says it is decided. `superseded` only when replacing an older ADR; then edit the old one's Status to `superseded` and link both ways.
 - **Context**: the forces at play, as stated by the user or found in code/issues. Do not embellish.
 - **Decision**: one clear statement.
 - **Alternatives considered**: only ones actually discussed or documented; else `Not documented`.

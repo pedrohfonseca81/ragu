@@ -1,4 +1,4 @@
-# Setting up Ragu — instructions for an agent
+# Setting up Ragu: instructions for an agent
 
 You are reading this because a person asked you to set up [Ragu](https://github.com/pedrohfonseca81/ragu) for their project. Ragu is a markdown knowledge base for business rules, flows, integrations and decisions, where every page cites the code it describes (`sources: api/src/billing/refund.ts:42`), agents read it over MCP, and a Stop hook stops you from finishing a task that changed code without updating the pages that cite it.
 
@@ -8,8 +8,8 @@ Requirements: Node ≥ 20 and git on `PATH`. Claude Code or Antigravity (IDE or 
 
 ## 0. Decide the scenario
 
-- **Existing project** — there is code already. Go to [1](#1-existing-project). The knowledge base will be bootstrapped *from* the code.
-- **New project** — little or no code yet. Go to [2](#2-new-project). The knowledge base is written *before* the code, as the specification, and the code catches up with it.
+- **Existing project**: there is code already. Go to [1](#1-existing-project). The knowledge base will be bootstrapped *from* the code.
+- **New project**: little or no code yet. Go to [2](#2-new-project). The knowledge base is written *before* the code, as the specification, and the code catches up with it.
 
 Both end in the same [layout](#layout) and the same [daily loop](#3-daily-loop).
 
@@ -49,7 +49,7 @@ cd knowledge-base
 npx create-ragu install
 ```
 
-For every system this writes, in the repository root: a marked block in `AGENTS.md` (created if missing) telling agents where the knowledge base is and the three rules; `@AGENTS.md` in `CLAUDE.md`; the MCP server in `.mcp.json`; and `.agents/plugins/ragu/` (the plugin for Antigravity). It also registers the plugin directories in `~/.gemini/config/plugins.json` when Antigravity is installed on the machine. It is idempotent — re-run it after adding a system.
+For every system this writes, in the repository root: a marked block in `AGENTS.md` (created if missing) telling agents where the knowledge base is and the three rules; `@AGENTS.md` in `CLAUDE.md`; the MCP server in `.mcp.json`; and `.agents/plugins/ragu/` (the plugin for Antigravity). It also registers the plugin directories in `~/.gemini/config/plugins.json` when Antigravity is installed on the machine. It is idempotent; re-run it after adding a system.
 
 Commit those files in each repository. If a repository already had an `AGENTS.md`, only the block between `<!-- ragu:start -->` and `<!-- ragu:end -->` was added; check that it does not contradict what was already there.
 
@@ -66,7 +66,7 @@ Antigravity got its copy in 1.2. Restart the agent runtime so it loads the hook,
 
 ### 1.4 Bootstrap the docs from the code, one system at a time
 
-With the plugin loaded, run the `ragu-init` skill for the first system (`/ragu-init api` in Claude Code; in Antigravity, ask for "ragu-init api"). It explores the repository and writes a **map** to `inbox/init-api.md` — modules, candidate business rules with `file:line`, integrations, flows, open questions — then **stops and asks** which pages to create. After confirmation it writes `systems/api.md`, glossary rows and `domain/*.md` pages, every one with `status: inferred`, `human_reviewed: false` and precise `sources:`, and runs `npm run check`.
+With the plugin loaded, run the `ragu-init` skill for the first system (`/ragu-init api` in Claude Code; in Antigravity, ask for "ragu-init api"). It explores the repository and writes a **map** to `inbox/init-api.md` (modules, candidate business rules with `file:line`, integrations, flows, open questions), then **stops and asks** which pages to create. After confirmation it writes `systems/api.md`, glossary rows and `domain/*.md` pages, every one with `status: inferred`, `human_reviewed: false` and precise `sources:`, and runs `npm run check`.
 
 If you are the agent running `ragu-init`: never skip the confirmation step, never invent a motivation for a rule (write `Reason not documented` and log the question in `inbox/QUESTIONS.md`), and never set `human_reviewed: true`.
 
@@ -107,7 +107,7 @@ Write `systems/api.md` (what the system will be), the glossary rows, one `domain
 
 ### 2.3 Build the code against the pages
 
-While implementing, read the pages first (`search_docs` over MCP, or open the files). When a rule lands in code, the Stop hook will notice the code change and ask for the knowledge base to follow; run `ragu-sync`: it sets `status: verified`, fills `sources:` with the exact `file:line`, and updates `updated_at`. Pages the code contradicts become `outdated` and go to `inbox/DIVERGENCES.md` — that is the signal to decide which one is right.
+While implementing, read the pages first (`search_docs` over MCP, or open the files). When a rule lands in code, the Stop hook will notice the code change and ask for the knowledge base to follow; run `ragu-sync`: it sets `status: verified`, fills `sources:` with the exact `file:line`, and updates `updated_at`. Pages the code contradicts become `outdated` and go to `inbox/DIVERGENCES.md`; that is the signal to decide which one is right.
 
 ## 3. Daily loop
 

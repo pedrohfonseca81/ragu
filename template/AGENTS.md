@@ -48,5 +48,5 @@ updated_at: YYYY-MM-DD
 1. **Code defines the truth.** When code and docs disagree, the code wins; mark the page `outdated` and log the divergence.
 2. **Never invent the why.** If the motivation is not explicit in code or an ADR, write `Reason not documented` and add the question to `inbox/QUESTIONS.md`.
 3. **No secrets.** Never commit tokens, passwords or real `.env` values. Environment variable *names* are fine.
-4. **Standard relative markdown links** (`[text](../domain/page.md)`), never `[[wikilinks]]` — they must work in both Obsidian and Starlight.
+4. **Standard relative markdown links** (`[text](../domain/page.md)`), never `[[wikilinks]]`: they must work in both Obsidian and Starlight.
 5. **Run `npm run check` before every commit** (and `npm run build` before pushing). Never disable validations.

@@ -4,4 +4,4 @@ Grouped by domain. Each question carries minimal context and the source that rai
 
 ## Orders
 
-1. `cancelOrder` allows cancellation while status is `shipped` but the shipping provider is never notified. Intentional (manual process) or a gap? — source: `api/src/orders/cancel.ts:18-31`.
+1. `cancelOrder` allows cancellation while status is `shipped` but the shipping provider is never notified. Intentional (manual process) or a gap? Source: `api/src/orders/cancel.ts:18-31`.
