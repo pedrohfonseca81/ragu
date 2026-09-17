@@ -1,4 +1,4 @@
-<!-- source: README.md@be41b52a2769 -->
+<!-- source: README.md@e4d55e2bb18e -->
 <p align="center">
   <img src="../../assets/ragu-banner.png" alt="Ragu" width="720">
 </p>
@@ -23,7 +23,7 @@ Ragu vous donne une base de connaissances en markdown pour les règles métier, 
 Les humains obtiennent un site [Starlight](https://starlight.astro.build) et un vault Obsidian à partir des mêmes fichiers. Rien n'est caché derrière un service : c'est du markdown, un JSON de configuration et quelques centaines de lignes de Node.
 
 <p align="center">
-  <img src="../../assets/ragu-flow.svg" alt="Code changes reach the agent; the plugin writes the knowledge base and reads it over ragu-mcp; pages cite code back with sources; the build publishes site, vault and llms.txt" width="720">
+  <img src="../../assets/ragu-flow.svg" alt="Code changes reach the agent; the plugin writes the knowledge base and reads it over ragu-mcp; pages cite code back with sources; the build publishes site, vault and llms.txt">
 </p>
 
 ## Démarrage rapide

@@ -1,4 +1,4 @@
-<!-- source: README.md@be41b52a2769 -->
+<!-- source: README.md@e4d55e2bb18e -->
 <p align="center">
   <img src="../../assets/ragu-banner.png" alt="Ragu" width="720">
 </p>
@@ -23,7 +23,7 @@ Ragu는 비즈니스 규칙, 흐름, 연동, 의사결정을 위한 markdown 지
 사람에게는 같은 파일로부터 [Starlight](https://starlight.astro.build) 사이트와 Obsidian 볼트가 만들어집니다. 서비스 뒤에 숨은 것은 없습니다. markdown, JSON 설정 하나, 그리고 몇백 줄의 Node뿐입니다.
 
 <p align="center">
-  <img src="../../assets/ragu-flow.svg" alt="Code changes reach the agent; the plugin writes the knowledge base and reads it over ragu-mcp; pages cite code back with sources; the build publishes site, vault and llms.txt" width="720">
+  <img src="../../assets/ragu-flow.svg" alt="Code changes reach the agent; the plugin writes the knowledge base and reads it over ragu-mcp; pages cite code back with sources; the build publishes site, vault and llms.txt">
 </p>
 
 ## 빠른 시작

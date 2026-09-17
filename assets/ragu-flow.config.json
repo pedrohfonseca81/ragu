@@ -1,7 +1,7 @@
 {
   "theme": "base",
   "fontFamily": "Inter, 'Liberation Sans', 'DejaVu Sans', Arial, sans-serif",
-  "flowchart": { "curve": "basis", "nodeSpacing": 40, "rankSpacing": 42, "padding": 12, "htmlLabels": true },
+  "flowchart": { "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50, "padding": 12, "htmlLabels": true },
   "themeVariables": {
     "fontFamily": "Inter, 'Liberation Sans', 'DejaVu Sans', Arial, sans-serif",
     "fontSize": "14px",

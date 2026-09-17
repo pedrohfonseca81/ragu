@@ -1,4 +1,4 @@
-<!-- source: README.md@be41b52a2769 -->
+<!-- source: README.md@e4d55e2bb18e -->
 <p align="center">
   <img src="../../assets/ragu-banner.png" alt="Ragu" width="720">
 </p>
@@ -23,7 +23,7 @@ Ragu 为业务规则、流程、集成和决策提供一个 markdown 知识库�
 人类则从同一批文件得到一个 [Starlight](https://starlight.astro.build) 站点和一个 Obsidian 库。没有任何东西藏在服务背后：只是 markdown、一个 JSON 配置和几百行 Node。
 
 <p align="center">
-  <img src="../../assets/ragu-flow.svg" alt="Code changes reach the agent; the plugin writes the knowledge base and reads it over ragu-mcp; pages cite code back with sources; the build publishes site, vault and llms.txt" width="720">
+  <img src="../../assets/ragu-flow.svg" alt="Code changes reach the agent; the plugin writes the knowledge base and reads it over ragu-mcp; pages cite code back with sources; the build publishes site, vault and llms.txt">
 </p>
 
 ## 快速开始
